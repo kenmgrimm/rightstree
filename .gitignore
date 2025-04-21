@@ -7,28 +7,35 @@
 # Ignore bundler config.
 /.bundle
 
-# Ignore all environment files.
-/.env*
+# Ignore dotenv environment variables
+.env*
+
+# Rails credentials and secrets
+/config/master.key
 
 # Ignore all logfiles and tempfiles.
 /log/*
-/tmp/*
 !/log/.keep
+/tmp/*
 !/tmp/.keep
 
-# Ignore pidfiles, but keep the directory.
-/tmp/pids/*
-!/tmp/pids/
-!/tmp/pids/.keep
+# Ignore Ruby LSP files
+/.ruby-lsp/
 
 # Ignore storage (uploaded files in development and any SQLite databases).
 /storage/*
 !/storage/.keep
-/tmp/storage/*
-!/tmp/storage/
-!/tmp/storage/.keep
 
-/public/assets
+# Ignore public assets and packs
+/public/assets/
+/public/packs/
+/public/packs-test/
 
-# Ignore master key for decrypting credentials and more.
-/config/master.key
+# Ignore Node.js modules
+/node_modules/
+
+# Ignore yarn error log
+/yarn-error.log
+
+# Ignore byebug history
+.byebug_history
