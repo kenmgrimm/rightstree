@@ -20,7 +20,6 @@
 ```
 ruby latest
 node latest
-postgres latest
 ```
 
 ## Gems to Include
@@ -34,6 +33,11 @@ postgres latest
 - Configure RSpec as default test suite
 - Integrate FactoryBot for factories
 - Enable WebMock for HTTP request stubbing in tests
+
+## Code Quality & Linting
+- Use RuboCop and RuboCop Rails for Ruby and Rails code style enforcement
+- Default config inherits from `rubocop-rails-omakase` for community best practices
+- Run `bundle exec rubocop` to check or auto-correct code style
 
 ## Version Control
 - Initialize Git repository
