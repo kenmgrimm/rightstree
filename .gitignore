@@ -1,0 +1,49 @@
+# Rails, Ruby, Node, macOS, and Editor ignores
+
+# Rails
+/log/
+/tmp/
+/storage/
+/public/assets/
+/public/packs/
+/public/packs-test/
+/node_modules/
+/yarn-error.log
+.byebug_history
+
+# Ruby
+*.gem
+*.rbc
+.bundle
+vendor/bundle
+.rspec_status
+
+# Node
+node_modules/
+.npm/
+
+# dotenv environment variables
+.env*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+.idea/
+.vscode/
+*.iml
+
+# Misc
+coverage/
+*.pid
+*.seed
+*.pid.lock
+
+# PostgreSQL
+*.pgdata
