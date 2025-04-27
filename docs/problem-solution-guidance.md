@@ -91,3 +91,40 @@ The Problem-Solution Guidance feature is a core component of the patent service,
 - Support invocation via `rails runner` and/or standalone Ruby scripts.
 - Enable developers and stakeholders to interactively test and demo the service outside of the main application.
 - Provide documentation and example scripts for usage.
+
+
+## Example Problem-Solution Pairs
+Example 1: Mobile Device Battery Management
+Problem:
+Mobile devices often experience rapid battery drain due to inefficient background application activity, leading to user frustration and reduced device usability.
+
+Solution:
+A dynamic background process manager that uses machine learning to predict and limit unnecessary background activity based on user habits, thereby extending average battery life without impacting critical notifications.
+
+Example 2: E-Commerce Search Relevance
+Problem:
+Users of large e-commerce platforms struggle to find relevant products due to poor search ranking and lack of personalization, resulting in lower conversion rates.
+
+Solution:
+An AI-powered search engine that adjusts product rankings in real time based on individual user behavior, preferences, and contextual signals, improving search relevance and increasing sales.
+
+Example 3: Secure IoT Device Communication
+Problem:
+Many Internet of Things (IoT) devices communicate over insecure channels, exposing sensitive data to interception and unauthorized access.
+
+Solution:
+A lightweight, end-to-end encryption protocol designed for low-power IoT devices, enabling secure communication without significant resource overhead.
+
+Example 4: Automated Medical Image Diagnosis
+Problem:
+Radiologists face high workloads and risk of diagnostic errors when interpreting large volumes of medical images, potentially delaying patient care.
+
+Solution:
+A deep learning system that automatically analyzes medical images, highlights potential anomalies, and provides diagnostic suggestions, assisting radiologists in making faster and more accurate decisions.
+
+Example 5: Remote Team Collaboration
+Problem:
+Remote teams often struggle with fragmented communication and lack of real-time collaboration tools, leading to reduced productivity and project delays.
+
+Solution:
+A unified collaboration platform integrating chat, video, shared whiteboards, and real-time document editing, optimized for distributed teams and seamless workflow integration.
