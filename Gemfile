@@ -72,9 +72,3 @@ group :development do
   gem "rubocop", "~> 1.75", require: false
   gem "rubocop-rails", "~> 2.31", require: false
 end
-
-group :test do
-  # Use system testing [https://guides.rubyonrails.org/testing.html#system-testing]
-  gem "capybara"
-  gem "selenium-webdriver"
-end
