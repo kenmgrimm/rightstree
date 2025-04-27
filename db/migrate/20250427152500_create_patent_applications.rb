@@ -13,7 +13,7 @@ class CreatePatentApplications < ActiveRecord::Migration[8.0]
 
       t.timestamps
     end
-    
+
     add_index :patent_applications, :user_id
   end
 end

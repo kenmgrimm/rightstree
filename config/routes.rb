@@ -11,12 +11,12 @@ Rails.application.routes.draw do
 
   # Patent Application routes
   # These routes handle the patent application web form with AI chat integration
-  resources :patent_applications, only: [:new, :create, :show, :edit, :update] do
+  resources :patent_applications, only: [ :new, :create, :show, :edit, :update ] do
     member do
       # Route for AI chat interactions with saved applications
       post :ai_chat
     end
-    
+
     collection do
       # Route for AI chat interactions with unsaved applications
       post :chat
@@ -25,7 +25,7 @@ Rails.application.routes.draw do
 
   # Defines the root path route ("/")
   # root "posts#index"
-  
+
   # Set the root route to the new patent application form
   root "patent_applications#new"
 end

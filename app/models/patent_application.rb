@@ -14,15 +14,15 @@ class PatentApplication < ApplicationRecord
   # Validations
   validates :problem, presence: true, allow_blank: false
   validates :solution, presence: true, allow_blank: false
-  
+
   # Ensure chat_history is always an array of messages
   before_validation :ensure_chat_history_structure
-  
+
   # Debug logging
   after_initialize :log_initialize
   after_save :log_save
   after_update :log_update
-  
+
   # Returns a summary of the patent application
   def summary
     {
@@ -34,24 +34,24 @@ class PatentApplication < ApplicationRecord
       updated_at: updated_at
     }
   end
-  
+
   private
-  
+
   # Ensures chat_history is properly structured as an array
   def ensure_chat_history_structure
     self.chat_history ||= []
     Rails.logger.debug("[PatentApplication] Ensuring chat_history structure: #{chat_history.inspect}")
   end
-  
+
   # Debug logging methods
   def log_initialize
     Rails.logger.debug("[PatentApplication] Initialized: #{attributes.inspect}")
   end
-  
+
   def log_save
     Rails.logger.debug("[PatentApplication] Saved: #{id}, problem: #{problem&.truncate(50)}, solution: #{solution&.truncate(50)}")
   end
-  
+
   def log_update
     Rails.logger.debug("[PatentApplication] Updated: #{id}, problem: #{problem&.truncate(50)}, solution: #{solution&.truncate(50)}")
   end
