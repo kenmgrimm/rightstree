@@ -20,7 +20,7 @@
         i.bi.bi-robot
   
   / Message content with different styling based on sender
-  .message-content.p-3.rounded-3.shadow-sm style="max-width: 85%;" class="#{is_user ? 'bg-primary text-white' : 'bg-surface-color'}" style="#{is_user ? 'background-color: var(--primary-color);' : 'background-color: var(--surface-color);'}"  
+  .message-content.p-3.rounded-3.shadow-sm class="#{is_user ? 'text-white' : ''}" style="max-width: 85%; #{is_user ? 'background-color: var(--primary-color);' : 'background-color: var(--surface-color);'}"
     .message-body
       p.mb-1 style="#{is_user ? 'color: white;' : 'color: var(--text-primary);'}"
         = message[:content]

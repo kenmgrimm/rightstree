@@ -21,7 +21,7 @@
   = render "chat_form", patent_application: @patent_application
 
 / Full-height container with modern styling - mobile-first approach
-.patent-application-container.d-flex.flex-column style="min-height: 100vh;"
+.patent-application-container.d-flex.flex-column style="height: 100vh; max-height: 100vh;"
   / Debug logging
   - logger.debug "Rendering patent application container with mobile-first approach"
   
@@ -68,26 +68,19 @@
             .card-body
               = yield :patent_form
           
-          / AI suggestions panel
-          .card.shadow-sm.mb-3
-            .card-header.py-3 style="background-color: rgba(248, 249, 250, 0.7);"
-              h3.h6.mb-0.fw-semibold
-                i.bi.bi-lightning.me-2 style="color: var(--accent-color);"
-                | AI Suggestions
-            .card-body
-              = yield :ai_suggestions
+          / AI suggestions removed as requested
       
       / Chat tab - mobile view
       #chat-content.tab-pane.fade role="tabpanel" aria-labelledby="chat-tab"
         .chat-container.d-flex.flex-column.h-100
-          .chat-main-container.bg-white.d-flex.flex-column.flex-grow-1.overflow-hidden
+          .chat-main-container.bg-white.d-flex.flex-column.flex-grow-1.overflow-hidden style="max-height: calc(100vh - 150px);"
             / Subtle chat header
             .chat-header.p-2.border-bottom style="background-color: rgba(248, 249, 250, 0.7);"
               p.text-secondary.mb-0.small
                 | Chat with the AI to define your patent
             
             / Chat messages container - mobile optimized
-            .chat-messages.p-2.p-sm-3.overflow-auto.flex-grow-1 style="background-color: var(--background-color);"
+            .chat-messages.p-2.p-sm-3.overflow-auto.flex-grow-1 style="background-color: var(--background-color); max-height: calc(100vh - 180px);"
               / Initial welcome message
               .message.ai-message.mb-3
                 .d-flex
@@ -118,17 +111,10 @@
           .card-body
             = yield :patent_form
         
-        / AI suggestions panel
-        .card.shadow-sm
-          .card-header.py-3 style="background-color: rgba(248, 249, 250, 0.7);"
-            h3.h6.mb-0.fw-semibold
-              i.bi.bi-lightning.me-2 style="color: var(--accent-color);"
-              | AI Suggestions
-          .card-body
-            = yield :ai_suggestions
+        / AI suggestions removed as requested
     
     / Main chat column - Grok style - on the right side for desktop - only visible on desktop
-    .chat-container.d-none.d-md-flex.flex-column.flex-grow-1.p-3
+    .chat-container.d-none.d-md-flex.flex-column.flex-grow-1.p-3 style="max-height: calc(100vh - 60px);"
       .chat-main-container.bg-white.rounded-3.shadow-sm.d-flex.flex-column.flex-grow-1.overflow-hidden
         / Subtle chat header
         .chat-header.p-3.border-bottom style="background-color: rgba(248, 249, 250, 0.7);"
@@ -136,7 +122,7 @@
             | Chat with the AI to define your patent's problem and solution
         
         / Chat messages container with scrollable area - takes all available space
-        .chat-messages.p-3.p-md-4.overflow-auto.flex-grow-1 style="background-color: var(--background-color);"
+        .chat-messages.p-3.p-md-4.overflow-auto.flex-grow-1 style="background-color: var(--background-color); max-height: calc(100vh - 200px);"
           / Initial welcome message
           .message.ai-message.mb-4
             .d-flex
