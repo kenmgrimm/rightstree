@@ -1,0 +1,56 @@
+/ app/views/patent_applications/edit.html.slim
+/
+/ This view renders the edit form for an existing patent application with:
+/ - Problem and solution text areas
+/ - AI chat interface for guidance
+/ - Save button to persist changes
+/
+/ Uses Turbo Frames for dynamic updates and Stimulus for interactivity
+
+.patent-application-container
+  .d-flex.justify-content-between.align-items-center.mb-4
+    h1 Edit Patent Application
+    = link_to "View Application", patent_application_path(@patent_application), class: "btn btn-outline-secondary"
+  
+  .row
+    .col-md-7
+      / Main form for problem and solution in a Turbo Frame
+      = turbo_frame_tag "patent_application_form" do
+        = render "form", patent_application: @patent_application
+    
+    .col-md-5
+      / AI Chat interface - same as in new/show views
+      .chat-container
+        h2 AI Assistant
+        
+        / Chat messages will be displayed here
+        #chat_messages.chat-messages
+          / Display existing chat history
+          - if @patent_application.chat_history.present?
+            - @patent_application.chat_history.each do |message|
+              = render "message", message: message
+          - else
+            / Initial welcome message if no history
+            .message.ai-message
+              p Hello! I'm your AI assistant. I can help you refine your patent application's problem and solution statements. What would you like to improve?
+        
+        / Chat form
+        #chat_form.chat-form
+          = render "chat_form", patent_application: @patent_application
+        
+        / AI suggestions panel
+        #ai_suggestions.ai-suggestions
+          = render "ai_suggestions", 
+                   patent_application: @patent_application,
+                   suggested_problem: nil,
+                   suggested_solution: nil
+  
+  / Debug info - only shown in development
+  - if Rails.env.development?
+    .debug-info.mt-5
+      h3 Debug Information
+      pre = @patent_application.inspect
+      
+      - if @patent_application.chat_history.present?
+        h4 Chat History (#{@patent_application.chat_history.size} messages)
+        pre = JSON.pretty_generate(@patent_application.chat_history)

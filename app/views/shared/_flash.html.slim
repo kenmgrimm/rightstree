@@ -1,0 +1,14 @@
+/ app/views/shared/_flash.html.slim
+/
+/ This partial renders flash messages for the application
+/ Used by Turbo Streams to update flash messages after actions
+
+#flash
+  - flash.each do |type, message|
+    div[class="alert alert-#{type == 'notice' ? 'success' : 'danger'} alert-dismissible fade show"]
+      = message
+      button.btn-close[type="button" data-bs-dismiss="alert" aria-label="Close"]
+
+/ Debug logging - only shown in development
+- if Rails.env.development? && flash.any?
+  /! Flash message debug: #{flash.to_hash.inspect}

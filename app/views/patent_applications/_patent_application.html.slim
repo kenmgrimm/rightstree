@@ -1,0 +1,31 @@
+/ app/views/patent_applications/_patent_application.html.slim
+/
+/ This partial renders a patent application for display
+/ Used in the show view and for Turbo Stream updates
+
+div[id=dom_id(patent_application)]
+  .card.mb-4
+    .card-header
+      h2 Technical Problem
+    .card-body
+      p.problem-text = patent_application.problem
+      
+      / Debug logging for problem updates
+      - if Rails.env.development?
+        .debug-info.small.text-muted.mt-2
+          | Problem length: #{patent_application.problem.length} characters
+  
+  .card.mb-4
+    .card-header
+      h2 Proposed Solution
+    .card-body
+      p.solution-text = patent_application.solution
+      
+      / Debug logging for solution updates
+      - if Rails.env.development?
+        .debug-info.small.text-muted.mt-2
+          | Solution length: #{patent_application.solution.length} characters
+  
+  .actions.mb-4
+    = link_to "Edit Application", edit_patent_application_path(patent_application), class: "btn btn-primary"
+    = link_to "New Application", new_patent_application_path, class: "btn btn-outline-secondary ms-2"

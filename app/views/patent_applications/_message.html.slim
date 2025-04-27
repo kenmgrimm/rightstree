@@ -1,0 +1,35 @@
+/ app/views/patent_applications/_message.html.slim
+/
+/ This partial renders a single chat message in the conversation with ChatGPT-like styling.
+/
+/ Features:
+/ - Different styling for user vs AI messages with avatars
+/ - Clear visual distinction between messages
+/ - Timestamp display
+/ - Comprehensive debug logging
+
+- message_id = "message_#{SecureRandom.hex(8)}"
+- is_user = message[:role] == 'user'
+- timestamp = message[:timestamp] ? Time.at(message[:timestamp]).strftime("%H:%M") : Time.current.strftime("%H:%M")
+
+.message.mb-4 class="#{is_user ? 'user-message' : 'ai-message'}" id=message_id data-timestamp=timestamp
+  / Avatar for the message sender
+  .message-avatar.float-start.me-3
+    .avatar.rounded-circle.d-flex.align-items-center.justify-content-center style="width: 40px; height: 40px;" class="#{is_user ? 'bg-secondary' : 'bg-primary'} text-white"
+      = is_user ? "You" : "AI"
+  
+  / Message content with different styling based on sender
+  .message-content.rounded.p-3.shadow-sm style="margin-left: 50px;" class="#{is_user ? 'bg-white border' : 'bg-light'}"
+    p.mb-1 = message[:content]
+    small.text-muted.d-block.text-end
+      = timestamp
+
+/ Debug logging - only shown in development
+- if Rails.env.development?
+  / Message debug information
+  .d-none data-debug="true"
+    | Message ID: #{message_id}
+    | Role: #{message[:role]}
+    | Timestamp: #{timestamp}
+    | Content length: #{message[:content]&.length}
+    | Content preview: #{message[:content]&.truncate(50)}

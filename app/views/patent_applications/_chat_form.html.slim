@@ -1,0 +1,62 @@
+/ app/views/patent_applications/_chat_form.html.slim
+/
+/ This partial renders the chat form for interacting with the AI assistant.
+/ Styled to look like ChatGPT's input area.
+/
+/ Features:
+/ - Prominent input field for user messages
+/ - Send button with loading state
+/ - Uses Turbo Streams for real-time updates
+/ - Comprehensive debug logging
+/ - Keyboard shortcuts (Enter to send)
+
+/ Chat form is always available, whether patent application is saved or not
+= form_with url: patent_application.persisted? ? ai_chat_patent_application_path(patent_application) : "/patent_applications/chat", 
+            method: :post,
+            class: "chat-form-container",
+            data: { controller: "chat-form", action: "turbo:submit-start->chat-form#handleSubmitStart turbo:submit-end->chat-form#handleSubmitEnd" } do |form|
+  
+  / ChatGPT-style input area with shadow and rounded corners
+  .chat-input-wrapper.position-relative.border.rounded-pill.shadow-sm.bg-white
+    / Text area that expands as user types
+    = form.text_area :message, 
+                    class: "form-control border-0 rounded-pill", 
+                    placeholder: "Message the AI assistant...",
+                    rows: 1,
+                    style: "resize: none; overflow: hidden; padding-right: 60px;",
+                    data: { chat_form_target: "messageInput", action: "keydown->chat-form#handleKeydown input->chat-form#adjustHeight" }
+    
+    / Include the current problem and solution as hidden fields if they exist
+    - if patent_application.problem.present?
+      = form.hidden_field :problem, value: patent_application.problem
+    - if patent_application.solution.present?
+      = form.hidden_field :solution, value: patent_application.solution
+    
+    / Send button positioned absolutely within the input
+    button.btn.btn-primary.rounded-circle.position-absolute type="submit" style="right: 5px; bottom: 5px; width: 38px; height: 38px;" data-chat-form-target="submitButton"
+      / Show either the send icon or spinner
+      span.d-flex.justify-content-center.align-items-center data-chat-form-target="buttonText"
+        i.bi.bi-send-fill style="font-size: 1.2rem;"
+      span.spinner-border.spinner-border-sm.d-none.position-absolute.top-50.start-50.translate-middle data-chat-form-target="spinner" role="status" aria-hidden="true"
+  
+  / Helper text and keyboard shortcuts
+  .d-flex.justify-content-between.align-items-center.mt-2.px-2.text-muted.small
+    .helper-text Ask the AI about your patent idea or technical problem
+    .keyboard-shortcuts
+      span.badge.bg-light.text-dark.border Enter to send
+      span.badge.bg-light.text-dark.border.ms-1 Shift+Enter for new line
+  
+  / Debug logging for chat form - only shown in development
+  - if Rails.env.development?
+    .chat-debug.small.text-muted.mt-2.border-top.pt-2
+      .row
+        .col-6
+          strong Status: 
+          span.badge.bg-info.text-white = patent_application.persisted? ? "Saved ##{patent_application.id}" : "Unsaved"
+        .col-6
+          strong Messages: 
+          span.badge.bg-secondary.text-white = patent_application.chat_history&.size || 0
+      .row.mt-1
+        .col-12
+          strong Action: 
+          code.small = patent_application.persisted? ? ai_chat_patent_application_path(patent_application) : "/patent_applications/chat"

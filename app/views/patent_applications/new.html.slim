@@ -1,0 +1,67 @@
+/ app/views/patent_applications/new.html.slim
+/
+/ This view renders the patent application interface with:
+/ - ChatGPT-like AI chat as the primary element
+/ - Problem and solution text areas in the sidebar
+/ - Save button for persisting the application
+/
+/ Uses Turbo Frames for dynamic updates and Stimulus for interactivity
+
+.patent-application-container.container-fluid
+  .row.mb-4
+    .col-12
+      h1.text-center Patent Application AI Assistant
+      p.text-center.text-muted Chat with the AI to define your patent's problem and solution. The AI will help you refine your ideas.
+  
+  .row
+    / Main chat column - ChatGPT style
+    .col-md-8.mb-4
+      .chat-main-container.border.rounded.shadow-sm
+        / Chat header
+        .chat-header.p-3.border-bottom.bg-light
+          h2.h4.mb-0 AI Patent Assistant
+          p.text-muted.small.mb-0 Describe your technical area and the AI will help you define a clear problem-solution pair
+        
+        / Chat messages container with scrollable area
+        #chat_messages.chat-messages.p-3.overflow-auto style="height: 500px; background-color: #f8f9fa;"
+          / Initial welcome message
+          .message.ai-message.mb-4
+            .message-avatar.float-start.me-3
+              .avatar.bg-primary.text-white.rounded-circle.d-flex.align-items-center.justify-content-center style="width: 40px; height: 40px;"
+                | AI
+            .message-content.bg-light.rounded.p-3.shadow-sm style="margin-left: 50px;"
+              p.mb-0 Hello! I'm your AI patent assistant. I'll help you define a clear technical problem and solution for your patent application. What technical area are you interested in?
+        
+        / Chat input form - always enabled
+        .chat-input-container.p-3.border-top
+          #chat_form.chat-form
+            = render "chat_form", patent_application: @patent_application
+    
+    / Sidebar with problem/solution form
+    .col-md-4
+      / Problem and solution form in a card
+      .card.shadow-sm.mb-4
+        .card-header.bg-light
+          h3.h5.mb-0 Patent Details
+          p.text-muted.small.mb-0 The AI will help you define these fields
+        
+        .card-body
+          = turbo_frame_tag "patent_application_form" do
+            = render "form", patent_application: @patent_application
+      
+      / AI suggestions panel
+      .card.shadow-sm
+        .card-header.bg-light
+          h3.h5.mb-0 AI Suggestions
+        .card-body
+          #ai_suggestions.ai-suggestions
+            = render "ai_suggestions", 
+                     patent_application: @patent_application,
+                     suggested_problem: nil,
+                     suggested_solution: nil
+  
+  / Debug info - only shown in development
+  - if Rails.env.development?
+    .debug-info.mt-5
+      h3 Debug Information
+      pre = @patent_application.inspect

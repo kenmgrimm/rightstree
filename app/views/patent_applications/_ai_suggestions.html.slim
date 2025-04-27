@@ -1,0 +1,72 @@
+/ app/views/patent_applications/_ai_suggestions.html.slim
+/
+/ This partial renders AI suggestions for the problem and solution in a compact format.
+/ Integrated with the new ChatGPT-like design.
+/
+/ Features:
+/ - Displays AI-suggested problem and solution when available
+/ - One-click buttons to accept suggestions
+/ - Visual indicators for suggestion status
+/ - Comprehensive debug logging
+
+.ai-suggestions-panel data-controller="ai-suggestions" data-ai-suggestions-problem-value=suggested_problem.to_json data-ai-suggestions-solution-value=suggested_solution.to_json
+  
+  - has_suggestions = suggested_problem.present? || suggested_solution.present?
+  
+  - if has_suggestions
+    / Suggestions are available
+    
+    - if suggested_problem.present?
+      / Problem suggestion
+      .suggestion-item.mb-3
+        .d-flex.justify-content-between.align-items-center.mb-2
+          h6.mb-0.text-primary
+            i.bi.bi-lightbulb.me-1
+            | Problem Suggestion
+          button.btn.btn-sm.btn-outline-primary.btn-icon type="button" data-action="ai-suggestions#acceptProblem" data-ai-suggestions-target="acceptProblemBtn"
+            i.bi.bi-check.me-1
+            | Apply
+        
+        .suggestion-content.p-2.border.rounded.bg-light
+          p.mb-1.small = suggested_problem
+        
+        / Debug log - only visible in development
+        - if Rails.env.development?
+          .debug-log.small.text-muted.mt-1 data-ai-suggestions-target="problemDebug"
+    
+    - if suggested_solution.present?
+      / Solution suggestion
+      .suggestion-item
+        .d-flex.justify-content-between.align-items-center.mb-2
+          h6.mb-0.text-primary
+            i.bi.bi-lightbulb.me-1
+            | Solution Suggestion
+          button.btn.btn-sm.btn-outline-primary.btn-icon type="button" data-action="ai-suggestions#acceptSolution" data-ai-suggestions-target="acceptSolutionBtn"
+            i.bi.bi-check.me-1
+            | Apply
+        
+        .suggestion-content.p-2.border.rounded.bg-light
+          p.mb-1.small = suggested_solution
+        
+        / Debug log - only visible in development
+        - if Rails.env.development?
+          .debug-log.small.text-muted.mt-1 data-ai-suggestions-target="solutionDebug"
+  
+  - else
+    / No suggestions available yet
+    .no-suggestions.p-3.text-center.border.rounded.bg-light
+      i.bi.bi-chat-text.d-block.text-muted.mb-2 style="font-size: 1.5rem;"
+      p.mb-0.small.text-muted Chat with the AI assistant to get suggestions for your problem and solution.
+  
+  / Debug information - only shown in development
+  - if Rails.env.development?
+    .debug-info.border-top.mt-3.pt-2.small.text-muted
+      strong Suggestions: 
+      = has_suggestions ? "Available" : "None"
+      - if has_suggestions
+        br
+        strong Problem: 
+        = suggested_problem.present? ? "#{suggested_problem.to_s.length} chars" : "none"
+        br
+        strong Solution: 
+        = suggested_solution.present? ? "#{suggested_solution.to_s.length} chars" : "none"

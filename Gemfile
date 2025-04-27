@@ -33,6 +33,12 @@ gem "thruster", require: false
 # gem "image_processing", "~> 1.2"
 
 gem "ruby-openai" # Official OpenAI Ruby client (openai/openai-ruby)
+gem "slim-rails" # Slim templating engine for Rails
+
+# Hotwire
+gem "turbo-rails" # Hotwire Turbo for Rails
+gem "stimulus-rails" # Hotwire Stimulus for Rails
+gem "importmap-rails" # Use Import Maps for JavaScript modules
 
 group :development, :test do
   # Load .env for environment variables in dev/test

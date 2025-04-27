@@ -62,7 +62,8 @@ class PatentService
     ai_message = response.dig("choices", 0, "message", "content")
     messages << { role: "assistant", content: ai_message }
 
-    puts "\n#{GREEN}AI:#{RESET} #{ai_message}"
+    # Log the AI response to the console without colors
+    puts "\nAI: #{ai_message}"
 
     # binding.break
 

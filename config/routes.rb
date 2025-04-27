@@ -9,6 +9,23 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
+  # Patent Application routes
+  # These routes handle the patent application web form with AI chat integration
+  resources :patent_applications, only: [:new, :create, :show, :edit, :update] do
+    member do
+      # Route for AI chat interactions with saved applications
+      post :ai_chat
+    end
+    
+    collection do
+      # Route for AI chat interactions with unsaved applications
+      post :chat
+    end
+  end
+
   # Defines the root path route ("/")
   # root "posts#index"
+  
+  # Set the root route to the new patent application form
+  root "patent_applications#new"
 end
