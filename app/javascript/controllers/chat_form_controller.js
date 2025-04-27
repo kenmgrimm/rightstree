@@ -3,11 +3,12 @@
 // Stimulus controller for the ChatGPT-style AI chat form
 // Handles chat message submission, loading states, auto-expanding text area, and keyboard shortcuts
 //
-// This controller is attached to the chat form and provides:
-// - Message submission handling with loading states
-// - Auto-expanding text area as user types
-// - Keyboard shortcuts (Enter to send, Shift+Enter for new line)
-// - Comprehensive debug logging throughout
+// This controller handles the chat form functionality:
+// - Auto-expanding text area
+// - Enter key to submit
+// - Loading state during submission
+// - Focus/blur effects for enhanced UI feedback
+// - Comprehensive debug logging
 
 import { Controller } from "@hotwired/stimulus"
 
@@ -15,15 +16,8 @@ export default class extends Controller {
   static targets = ["messageInput", "submitButton", "buttonText", "spinner"]
   
   connect() {
-    console.debug("[ChatFormController] Connected to chat form", {
-      element: this.element.id || "(no id)",
-      timestamp: new Date().toISOString()
-    })
-    
-    // Initialize the text area height
+    console.debug("[ChatFormController] Connected")
     this.adjustHeight()
-    
-    // Focus the input field on connect
     this.messageInputTarget.focus()
   }
   
@@ -81,18 +75,34 @@ export default class extends Controller {
   
   // Handle keyboard events (Enter to send, Shift+Enter for new line)
   handleKeydown(event) {
-    // Submit on Enter (but not Shift+Enter)
+    // Submit on Enter (without Shift)
     if (event.key === "Enter" && !event.shiftKey) {
       event.preventDefault()
+      this.element.requestSubmit()
       
-      // Only submit if there's a message and the button isn't disabled
-      const message = this.messageInputTarget.value.trim()
-      if (message.length > 0 && !this.submitButtonTarget.disabled) {
-        console.debug("[ChatFormController] Enter key pressed, submitting form", {
-          messageLength: message.length
-        })
-        this.submitButtonTarget.click()
-      }
+      console.debug("[ChatFormController] Form submitted via Enter key", {
+        timestamp: new Date().toISOString()
+      })
+    } else {
+      console.debug("[ChatFormController] Key pressed", {
+        key: event.key,
+        shiftKey: event.shiftKey,
+        timestamp: new Date().toISOString()
+      })
     }
+  }
+  
+  // Handle focus event - enhance the input appearance
+  handleFocus() {
+    console.debug("[ChatFormController] Input focused")
+    this.element.querySelector('.chat-input-wrapper').style.boxShadow = "0 0 0 2px var(--primary-light), 0 4px 6px rgba(0, 0, 0, 0.1)"
+    this.submitButtonTarget.style.transform = "scale(1.05)"
+  }
+  
+  // Handle blur event - return to normal appearance
+  handleBlur() {
+    console.debug("[ChatFormController] Input blurred")
+    this.element.querySelector('.chat-input-wrapper').style.boxShadow = ""
+    this.submitButtonTarget.style.transform = "scale(1)"
   }
 }

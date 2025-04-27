@@ -44,7 +44,9 @@ This feature provides a simple, interactive web form for users to define and ref
 ### 5. Validation & UX
 - Both problem and solution fields must be non-empty to save.
 - Show validation errors if the user tries to save an incomplete application.
-- The UI should be simple, modern, and responsive.
+- The UI must follow mobile-first development principles.
+- The interface must be fully responsive and work well on all device sizes (mobile, tablet, desktop).
+- Design should be modern, clean, and intuitive with a Grok-like aesthetic.
 
 ## API Endpoints (Sample)
 - `POST /patent_applications` — Create a new patent application.
@@ -67,7 +69,11 @@ This feature provides a simple, interactive web form for users to define and ref
 - [ ] AI can reference the current problem/solution in its guidance.
 - [ ] Saving persists the problem/solution as a `patent_application`.
 - [ ] Validation prevents saving incomplete applications.
-- [ ] UI is clear, modern, and responsive.
+- [ ] UI follows mobile-first development principles.
+- [ ] Interface is fully responsive across all device sizes (mobile, tablet, desktop).
+- [ ] Design is modern, clean, and intuitive with a Grok-like aesthetic.
+- [ ] Mobile experience includes optimized touch targets and appropriate font sizes.
+- [ ] Comprehensive debug logging is implemented throughout the application.
 
 ## Future Enhancements
 - Support for attaching claims, diagrams, or additional metadata.

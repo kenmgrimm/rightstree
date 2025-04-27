@@ -1,10 +1,10 @@
 / app/views/patent_applications/_message.html.slim
 /
-/ This partial renders a single chat message in the conversation with ChatGPT-like styling.
+/ This partial renders a single chat message in the conversation with Grok-like styling.
 /
 / Features:
-/ - Different styling for user vs AI messages with avatars
-/ - Clear visual distinction between messages
+/ - Modern, clean design with subtle gradients for AI avatar
+/ - Clear visual distinction between user and AI messages
 / - Timestamp display
 / - Comprehensive debug logging
 
@@ -12,17 +12,30 @@
 - is_user = message[:role] == 'user'
 - timestamp = message[:timestamp] ? Time.at(message[:timestamp]).strftime("%H:%M") : Time.current.strftime("%H:%M")
 
-.message.mb-4 class="#{is_user ? 'user-message' : 'ai-message'}" id=message_id data-timestamp=timestamp
-  / Avatar for the message sender
-  .message-avatar.float-start.me-3
-    .avatar.rounded-circle.d-flex.align-items-center.justify-content-center style="width: 40px; height: 40px;" class="#{is_user ? 'bg-secondary' : 'bg-primary'} text-white"
-      = is_user ? "You" : "AI"
+.message.mb-4.d-flex class="#{is_user ? 'user-message justify-content-end' : 'ai-message'}" id=message_id data-timestamp=timestamp
+  / For AI messages, show avatar on the left
+  - unless is_user
+    .message-avatar.me-3.flex-shrink-0
+      .avatar.text-white.rounded-circle.d-flex.align-items-center.justify-content-center style="width: 38px; height: 38px; background: linear-gradient(135deg, var(--primary-color), var(--accent-color));"
+        i.bi.bi-robot
   
   / Message content with different styling based on sender
-  .message-content.rounded.p-3.shadow-sm style="margin-left: 50px;" class="#{is_user ? 'bg-white border' : 'bg-light'}"
-    p.mb-1 = message[:content]
-    small.text-muted.d-block.text-end
-      = timestamp
+  .message-content.p-3.rounded-3.shadow-sm style="max-width: 85%;" class="#{is_user ? 'bg-primary text-white' : 'bg-surface-color'}" style="#{is_user ? 'background-color: var(--primary-color);' : 'background-color: var(--surface-color);'}"  
+    .message-body
+      p.mb-1 style="#{is_user ? 'color: white;' : 'color: var(--text-primary);'}"
+        = message[:content]
+    .message-footer.d-flex.justify-content-between.align-items-center.mt-2
+      small.opacity-75 style="#{is_user ? 'color: rgba(255,255,255,0.8);' : 'color: var(--text-muted);'}"
+        = timestamp
+      - if is_user
+        small.opacity-75 style="color: rgba(255,255,255,0.8);"
+          | You
+  
+  / For user messages, show avatar on the right
+  - if is_user
+    .message-avatar.ms-3.flex-shrink-0
+      .avatar.bg-white.text-primary.border.rounded-circle.d-flex.align-items-center.justify-content-center style="width: 38px; height: 38px;"
+        i.bi.bi-person
 
 / Debug logging - only shown in development
 - if Rails.env.development?

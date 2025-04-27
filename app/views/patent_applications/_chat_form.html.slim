@@ -1,11 +1,12 @@
 / app/views/patent_applications/_chat_form.html.slim
 /
 / This partial renders the chat form for interacting with the AI assistant.
-/ Styled to look like ChatGPT's input area.
+/ Styled to look like Grok's modern, clean input area.
 /
 / Features:
-/ - Prominent input field for user messages
-/ - Send button with loading state
+/ - Mobile-first responsive design
+/ - Sleek, modern input field with subtle shadow
+/ - Animated send button with loading state
 / - Uses Turbo Streams for real-time updates
 / - Comprehensive debug logging
 / - Keyboard shortcuts (Enter to send)
@@ -13,18 +14,18 @@
 / Chat form is always available, whether patent application is saved or not
 = form_with url: patent_application.persisted? ? ai_chat_patent_application_path(patent_application) : "/patent_applications/chat", 
             method: :post,
-            class: "chat-form-container",
+            class: "chat-form-container w-100",
             data: { controller: "chat-form", action: "turbo:submit-start->chat-form#handleSubmitStart turbo:submit-end->chat-form#handleSubmitEnd" } do |form|
   
-  / ChatGPT-style input area with shadow and rounded corners
-  .chat-input-wrapper.position-relative.border.rounded-pill.shadow-sm.bg-white
-    / Text area that expands as user types
+  / Grok-style input area with subtle shadow and pill shape - mobile-first responsive design
+  .chat-input-wrapper.position-relative.rounded-pill.shadow-sm.bg-white.border.d-flex.align-items-center style="transition: box-shadow 0.2s ease;"
+    / Text area that expands as user types - mobile optimized
     = form.text_area :message, 
                     class: "form-control border-0 rounded-pill", 
-                    placeholder: "Message the AI assistant...",
+                    placeholder: "#{request.variant.mobile? ? 'Message AI...' : 'Message the AI assistant...'}",
                     rows: 1,
-                    style: "resize: none; overflow: hidden; padding-right: 60px;",
-                    data: { chat_form_target: "messageInput", action: "keydown->chat-form#handleKeydown input->chat-form#adjustHeight" }
+                    style: "resize: none; overflow: hidden; padding-right: #{request.variant.mobile? ? '50px' : '60px'}; font-size: #{request.variant.mobile? ? '14px' : '15px'}; box-shadow: none;",
+                    data: { chat_form_target: "messageInput", action: "keydown->chat-form#handleKeydown input->chat-form#adjustHeight focus->chat-form#handleFocus blur->chat-form#handleBlur" }
     
     / Include the current problem and solution as hidden fields if they exist
     - if patent_application.problem.present?
@@ -32,12 +33,12 @@
     - if patent_application.solution.present?
       = form.hidden_field :solution, value: patent_application.solution
     
-    / Send button positioned absolutely within the input
-    button.btn.btn-primary.rounded-circle.position-absolute type="submit" style="right: 5px; bottom: 5px; width: 38px; height: 38px;" data-chat-form-target="submitButton"
+    / Send button with modern styling - size adjusts for mobile
+    button.btn.rounded-circle.position-absolute.d-flex.justify-content-center.align-items-center type="submit" style="right: #{request.variant.mobile? ? '4px' : '6px'}; bottom: #{request.variant.mobile? ? '4px' : '6px'}; width: #{request.variant.mobile? ? '32px' : '36px'}; height: #{request.variant.mobile? ? '32px' : '36px'}; background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); border: none; transition: transform 0.2s ease;" data-chat-form-target="submitButton"
       / Show either the send icon or spinner
       span.d-flex.justify-content-center.align-items-center data-chat-form-target="buttonText"
-        i.bi.bi-send-fill style="font-size: 1.2rem;"
-      span.spinner-border.spinner-border-sm.d-none.position-absolute.top-50.start-50.translate-middle data-chat-form-target="spinner" role="status" aria-hidden="true"
+        i.bi.bi-send-fill.text-white style="font-size: #{request.variant.mobile? ? '0.875rem' : '1rem'};" 
+      span.spinner-border.spinner-border-sm.text-white.d-none.position-absolute.top-50.start-50.translate-middle data-chat-form-target="spinner" role="status" aria-hidden="true"
   
   / Helper text and keyboard shortcuts
   .d-flex.justify-content-between.align-items-center.mt-2.px-2.text-muted.small

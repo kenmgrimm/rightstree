@@ -22,43 +22,60 @@
         - patent_application.errors.each do |error|
           li = error.full_message
 
-  / Problem field - more compact with floating label
-  .form-group.mb-3
-    .form-floating
-      = form.text_area :problem, class: "form-control", 
-                      style: "height: 120px;", 
-                      placeholder: "Technical Problem",
-                      data: { patent_form_target: "problem", action: "input->patent-form#validateForm" }
-      = form.label :problem, "Technical Problem"
-    .form-text.small.text-muted
+  / Problem field with enhanced styling
+  .mb-4
+    .d-flex.justify-content-between.align-items-center.mb-2
+      = form.label :problem, "Technical Problem", class: "form-label fw-semibold mb-0"
+      span.badge.bg-light.text-secondary.border Required
+    = form.text_area :problem, 
+                    class: "form-control border", 
+                    rows: 5, 
+                    style: "border-radius: 12px; resize: vertical; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;",
+                    placeholder: "Describe the technical problem to be solved...",
+                    data: { action: "focus->patent-form#handleFieldFocus blur->patent-form#handleFieldBlur" }
+    .form-text.text-muted.mt-2
+      i.bi.bi-info-circle.me-1
       | A clear statement of the technical problem (AI will help you refine this)
-
-  / Solution field - more compact with floating label
-  .form-group.mb-3
-    .form-floating
-      = form.text_area :solution, class: "form-control", 
-                      style: "height: 120px;", 
-                      placeholder: "Proposed Solution",
-                      data: { patent_form_target: "solution", action: "input->patent-form#validateForm" }
-      = form.label :solution, "Proposed Solution"
-    .form-text.small.text-muted
-      | Your solution to the problem (AI will help you refine this)
-
-  / Save button and status
-  .d-flex.justify-content-between.align-items-center
-    = form.submit "Save Application", class: "btn btn-primary",
-                 data: { patent_form_target: "submitButton", action: "click->patent-form#logSave" }
-    
-    / Status indicator
-    - if patent_application.persisted?
-      span.badge.bg-success.d-inline-flex.align-items-center
-        i.bi.bi-check-circle.me-1
-        | Saved ##{patent_application.id}
-    - else
-      span.badge.bg-secondary.d-inline-flex.align-items-center
-        i.bi.bi-pencil.me-1
-        | Draft
   
+  / Solution field with enhanced styling
+  .mb-4
+    .d-flex.justify-content-between.align-items-center.mb-2
+      = form.label :solution, "Proposed Solution", class: "form-label fw-semibold mb-0"
+      span.badge.bg-light.text-secondary.border Required
+    = form.text_area :solution, 
+                    class: "form-control border", 
+                    rows: 5, 
+                    style: "border-radius: 12px; resize: vertical; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;",
+                    placeholder: "Describe your solution to the problem...",
+                    data: { action: "focus->patent-form#handleFieldFocus blur->patent-form#handleFieldBlur" }
+    .form-text.text-muted.mt-2
+      i.bi.bi-info-circle.me-1
+      | Your solution to the problem (AI will help you refine this)
+  
+  / Save button with enhanced styling
+  .d-grid.gap-2.mb-4
+    button.btn.btn-primary.py-2 type="submit" style="border-radius: 12px; background: linear-gradient(135deg, var(--primary-color), #0052cc);" data-patent-form-target="submitButton"
+      span.d-flex.align-items-center.justify-content-center data-patent-form-target="buttonText"
+        i.bi.bi-save.me-2
+        | Save as Draft
+      span.spinner-border.spinner-border-sm.d-none data-patent-form-target="spinner" role="status" aria-hidden="true"
+  
+  / Status information with enhanced styling
+  .mt-3.small.p-3.rounded-3 style="background-color: var(--surface-color); border: 1px solid var(--border-color);"
+    .d-flex.justify-content-between.text-muted
+      div
+        | ID: 
+        span.fw-bold = patent_application.persisted? ? patent_application.id : "(new)"
+      div
+        | Updated: 
+        span.fw-bold = patent_application.updated_at ? patent_application.updated_at.strftime("%Y-%m-%d %H:%M") : "never"
+    .d-flex.mt-1.text-muted
+      div
+        | Problem: 
+        span.fw-bold = patent_application.problem.present? ? "#{patent_application.problem.truncate(20)}" : "empty"
+        | , Solution: 
+        span.fw-bold = patent_application.solution.present? ? "#{patent_application.solution.truncate(20)}" : "empty"
+
   / Debug information - only shown in development
   - if Rails.env.development?
     .debug-info.border-top.mt-3.pt-2.small.text-muted

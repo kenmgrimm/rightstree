@@ -1,67 +1,162 @@
 / app/views/patent_applications/new.html.slim
 /
 / This view renders the patent application interface with:
-/ - ChatGPT-like AI chat as the primary element
+/ - Grok-like AI chat as the primary element
 / - Problem and solution text areas in the sidebar
 / - Save button for persisting the application
 /
 / Uses Turbo Frames for dynamic updates and Stimulus for interactivity
 
-.patent-application-container.container-fluid
-  .row.mb-4
-    .col-12
-      h1.text-center Patent Application AI Assistant
-      p.text-center.text-muted Chat with the AI to define your patent's problem and solution. The AI will help you refine your ideas.
+/ Cache the form and AI suggestions to prevent duplicate rendering
+- content_for :patent_form do
+  = render "form", patent_application: @patent_application
+
+- content_for :ai_suggestions do
+  = render "ai_suggestions", 
+           patent_application: @patent_application,
+           suggested_problem: nil,
+           suggested_solution: nil
+
+- content_for :chat_form do
+  = render "chat_form", patent_application: @patent_application
+
+/ Full-height container with modern styling - mobile-first approach
+.patent-application-container.d-flex.flex-column style="min-height: 100vh;"
+  / Debug logging
+  - logger.debug "Rendering patent application container with mobile-first approach"
   
-  .row
-    / Main chat column - ChatGPT style
-    .col-md-8.mb-4
-      .chat-main-container.border.rounded.shadow-sm
-        / Chat header
-        .chat-header.p-3.border-bottom.bg-light
-          h2.h4.mb-0 AI Patent Assistant
-          p.text-muted.small.mb-0 Describe your technical area and the AI will help you define a clear problem-solution pair
+  / Modern, minimal header with subtle gradient - responsive for all devices
+  header.py-2.py-md-3.px-3.px-md-4.border-bottom style="background: linear-gradient(to right, var(--primary-light), #f8f9fa);"
+    .container-fluid
+      .d-flex.justify-content-between.align-items-center
+        h1.h5.h4-md.mb-0.fw-bold
+          i.bi.bi-lightbulb.me-2 style="color: var(--primary-color);"
+          | Patent AI Assistant
         
-        / Chat messages container with scrollable area
-        #chat_messages.chat-messages.p-3.overflow-auto style="height: 500px; background-color: #f8f9fa;"
+        / Optional navigation or user controls - simplified on mobile
+        .nav-controls
+          button.btn.btn-sm.btn-outline-primary.rounded-pill.d-none.d-sm-inline-flex
+            i.bi.bi-question-circle.me-1
+            | Help
+          button.btn.btn-sm.btn-outline-primary.rounded-circle.d-inline-flex.d-sm-none
+            i.bi.bi-question-circle
+  
+  / Mobile tabs for switching between patent details and chat - only visible on mobile
+  .d-flex.d-md-none.border-bottom.bg-white
+    button.flex-grow-1.py-2.px-3.border-0.bg-transparent.text-center.fw-medium.active#patent-tab data-bs-toggle="tab" data-bs-target="#patent-content" type="button" role="tab" aria-controls="patent-content" aria-selected="true"
+      i.bi.bi-file-earmark-text.me-2
+      | Patent Details
+    button.flex-grow-1.py-2.px-3.border-0.bg-transparent.text-center.fw-medium#chat-tab data-bs-toggle="tab" data-bs-target="#chat-content" type="button" role="tab" aria-controls="chat-content" aria-selected="false"
+      i.bi.bi-chat.me-2
+      | AI Chat
+  
+  / Main content area - mobile-first with tabs on small screens, side-by-side on larger screens
+  .flex-grow-1.d-flex.flex-column.flex-md-row.overflow-hidden style="background-color: var(--surface-alt-color);"
+    / ==================== MOBILE TABS CONTENT ====================
+    / Only visible on mobile devices
+    .tab-content.d-md-none.w-100.flex-grow-1.overflow-auto
+      / Patent details tab - mobile view
+      #patent-content.tab-pane.fade.show.active role="tabpanel" aria-labelledby="patent-tab"
+        .p-3
+          / Problem and solution form in a card
+          .card.shadow-sm.mb-3
+            .card-header.py-3 style="background-color: rgba(248, 249, 250, 0.7);"
+              h3.h6.mb-0.fw-semibold
+                i.bi.bi-file-earmark-text.me-2 style="color: var(--primary-color);"
+                | Patent Details
+            
+            .card-body
+              = yield :patent_form
+          
+          / AI suggestions panel
+          .card.shadow-sm.mb-3
+            .card-header.py-3 style="background-color: rgba(248, 249, 250, 0.7);"
+              h3.h6.mb-0.fw-semibold
+                i.bi.bi-lightning.me-2 style="color: var(--accent-color);"
+                | AI Suggestions
+            .card-body
+              = yield :ai_suggestions
+      
+      / Chat tab - mobile view
+      #chat-content.tab-pane.fade role="tabpanel" aria-labelledby="chat-tab"
+        .chat-container.d-flex.flex-column.h-100
+          .chat-main-container.bg-white.d-flex.flex-column.flex-grow-1.overflow-hidden
+            / Subtle chat header
+            .chat-header.p-2.border-bottom style="background-color: rgba(248, 249, 250, 0.7);"
+              p.text-secondary.mb-0.small
+                | Chat with the AI to define your patent
+            
+            / Chat messages container - mobile optimized
+            .chat-messages.p-2.p-sm-3.overflow-auto.flex-grow-1 style="background-color: var(--background-color);"
+              / Initial welcome message
+              .message.ai-message.mb-3
+                .d-flex
+                  .message-avatar.me-2.flex-shrink-0
+                    .avatar.text-white.rounded-circle.d-flex.align-items-center.justify-content-center style="width: 32px; height: 32px; background: linear-gradient(135deg, var(--primary-color), var(--accent-color));"
+                      i.bi.bi-robot.small
+                  .message-content.p-2.rounded-3 style="background-color: var(--surface-color); max-width: 90%;"
+                    p.mb-1.small Hello! I'm your AI patent assistant. I'll help you define a clear technical problem and solution.
+                    p.mb-0.small What technical area are you interested in?
+            
+            / Chat input form - mobile optimized
+            .chat-input-container.p-2.border-top style="background-color: var(--background-color);"
+              = yield :chat_form
+    
+    / ==================== DESKTOP LAYOUT ====================
+    / Only visible on desktop - side by side with patent details on left, chat on right
+    
+    / Left sidebar with patent details - only visible on desktop
+    .sidebar.d-none.d-md-flex.flex-column style="width: 380px; background-color: var(--surface-alt-color); margin-right: var(--spacing-md);"
+      .p-3
+        / Problem and solution form in a card
+        .card.shadow-sm.mb-3
+          .card-header.py-3 style="background-color: rgba(248, 249, 250, 0.7);"
+            h3.h6.mb-0.fw-semibold
+              i.bi.bi-file-earmark-text.me-2 style="color: var(--primary-color);"
+              | Patent Details
+          
+          .card-body
+            = yield :patent_form
+        
+        / AI suggestions panel
+        .card.shadow-sm
+          .card-header.py-3 style="background-color: rgba(248, 249, 250, 0.7);"
+            h3.h6.mb-0.fw-semibold
+              i.bi.bi-lightning.me-2 style="color: var(--accent-color);"
+              | AI Suggestions
+          .card-body
+            = yield :ai_suggestions
+    
+    / Main chat column - Grok style - on the right side for desktop - only visible on desktop
+    .chat-container.d-none.d-md-flex.flex-column.flex-grow-1.p-3
+      .chat-main-container.bg-white.rounded-3.shadow-sm.d-flex.flex-column.flex-grow-1.overflow-hidden
+        / Subtle chat header
+        .chat-header.p-3.border-bottom style="background-color: rgba(248, 249, 250, 0.7);"
+          p.text-secondary.mb-0.fw-medium
+            | Chat with the AI to define your patent's problem and solution
+        
+        / Chat messages container with scrollable area - takes all available space
+        .chat-messages.p-3.p-md-4.overflow-auto.flex-grow-1 style="background-color: var(--background-color);"
           / Initial welcome message
           .message.ai-message.mb-4
-            .message-avatar.float-start.me-3
-              .avatar.bg-primary.text-white.rounded-circle.d-flex.align-items-center.justify-content-center style="width: 40px; height: 40px;"
-                | AI
-            .message-content.bg-light.rounded.p-3.shadow-sm style="margin-left: 50px;"
-              p.mb-0 Hello! I'm your AI patent assistant. I'll help you define a clear technical problem and solution for your patent application. What technical area are you interested in?
+            .d-flex
+              .message-avatar.me-3.flex-shrink-0
+                .avatar.text-white.rounded-circle.d-flex.align-items-center.justify-content-center style="width: 38px; height: 38px; background: linear-gradient(135deg, var(--primary-color), var(--accent-color));"
+                  i.bi.bi-robot
+              .message-content.p-3.rounded-3 style="background-color: var(--surface-color); max-width: 85%;"
+                p.mb-2.fw-normal Hello! I'm your AI patent assistant. I'll help you define a clear technical problem and solution for your patent application.
+                p.mb-0.fw-normal What technical area are you interested in?
         
-        / Chat input form - always enabled
-        .chat-input-container.p-3.border-top
-          #chat_form.chat-form
-            = render "chat_form", patent_application: @patent_application
-    
-    / Sidebar with problem/solution form
-    .col-md-4
-      / Problem and solution form in a card
-      .card.shadow-sm.mb-4
-        .card-header.bg-light
-          h3.h5.mb-0 Patent Details
-          p.text-muted.small.mb-0 The AI will help you define these fields
-        
-        .card-body
-          = turbo_frame_tag "patent_application_form" do
-            = render "form", patent_application: @patent_application
-      
-      / AI suggestions panel
-      .card.shadow-sm
-        .card-header.bg-light
-          h3.h5.mb-0 AI Suggestions
-        .card-body
-          #ai_suggestions.ai-suggestions
-            = render "ai_suggestions", 
-                     patent_application: @patent_application,
-                     suggested_problem: nil,
-                     suggested_solution: nil
+        / Modern chat input form - always enabled
+        .chat-input-container.p-3.border-top style="background-color: var(--background-color);"
+          = yield :chat_form
+  
+  / Mobile sidebar toggle button - visible only on small screens (now positioned on left side)
+  button.btn.btn-primary.rounded-circle.position-fixed.d-md-none style="bottom: 20px; left: 20px; width: 50px; height: 50px; z-index: 1000;"
+    i.bi.bi-layout-sidebar.fs-5
   
   / Debug info - only shown in development
   - if Rails.env.development?
-    .debug-info.mt-5
+    .debug-info.mt-3.px-3.small
       h3 Debug Information
       pre = @patent_application.inspect
