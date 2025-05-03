@@ -13,9 +13,9 @@
     <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
     <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
 
-    <link rel="icon" href="/icon.png" type="image/png">
-    <link rel="icon" href="/icon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="/icon.png">
+    <link rel="icon" href="/images/rightstree_logo_cropped.png" type="image/png">
+    <link rel="apple-touch-icon" href="/images/rightstree_logo_cropped.png">
+    <% logger.debug "[Logo Debug] Using rightstree_logo_cropped.png for favicon and apple-touch-icon" %>
 
     <%# Google Fonts - Inter for modern, clean typography %>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -34,12 +34,12 @@
     
     <style>
       :root {
-        /* Modern color palette */
-        --primary-color: #0066ff;
-        --primary-light: #e6f0ff;
-        --secondary-color: #6c757d;
-        --accent-color: #5d2e8c;
-        --success-color: #10b981;
+        /* Color palette based on the RightsTree logo */
+        --primary-color: #1e3d3d; /* Dark teal from logo */
+        --primary-light: #e6f0f0; /* Light teal */
+        --secondary-color: #6c757d; /* Neutral gray */
+        --accent-color: #2a5050; /* Slightly lighter teal */
+        --success-color: #10b981; /* Keep green for success states */
         --background-color: #ffffff;
         --surface-color: #f8f9fa;
         --surface-alt-color: #f0f2f5;
@@ -128,17 +128,19 @@
   </head>
 
   <body>
-    <!-- Main Navigation -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm sticky-top">
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm sticky-top py-2">
       <div class="container">
+        <% logger.debug "[Layout Debug] Adjusted navbar padding for larger logo" %>
         <!-- Brand/logo with tagline -->
         <a class="navbar-brand d-flex align-items-center" href="/">
-          <img src="/icon.svg" alt="Rightstree Logo" width="30" height="30" class="me-2">
-          <div>
-            <span class="fw-bold d-block" style="color: var(--primary-color);">Rightstree</span>
+          <img src="/images/rightstree_logo_label_right_cropped.png" alt="Rightstree Logo" height="60" class="me-2">
+          <div class="d-none">
+            <!-- Tagline hidden as it's included in the logo -->
             <small class="text-muted d-none d-sm-inline-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Where Ideas Take Root</small>
           </div>
         </a>
+        <% logger.debug "[Logo Debug] Using rightstree_logo_label_right_cropped.png in navigation bar (height: 60px)" %>
         
         <!-- Mobile toggle button -->
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" 
@@ -216,17 +218,22 @@
     <!-- Footer -->
     <footer class="bg-white border-top mt-auto py-4">
       <div class="container">
-        <div class="row">
-          <div class="col-md-6 mb-3 mb-md-0">
+        <div class="row align-items-center">
+          <div class="col-md-3 mb-3 mb-md-0 text-center text-md-start">
+            <img src="/images/rightstree_logo_label_bottom.png" alt="Rightstree Logo" height="60" class="mb-2">
+            <% logger.debug "[Logo Debug] Using rightstree_logo_label_bottom.png in footer" %>
+          </div>
+          <div class="col-md-4 mb-3 mb-md-0">
             <p class="mb-0 text-muted">
               &copy; <%= Time.current.year %> Rightstree. All rights reserved.
               <span class="d-block d-md-inline ms-md-2 fst-italic">Where Ideas Take Root</span>
             </p>
           </div>
-          <div class="col-md-6 text-md-end">
+          <div class="col-md-5 text-md-end">
             <a href="#" class="text-muted me-3">Terms</a>
             <a href="#" class="text-muted me-3">Privacy</a>
-            <a href="#" class="text-muted">Contact</a>
+            <a href="#" class="text-muted me-3">Contact</a>
+            <a href="#" class="text-muted">About</a>
           </div>
         </div>
       </div>

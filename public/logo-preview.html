@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RightsTree Logo Preview</title>
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+      background-color: #f8f9fa;
+    }
+    .logo-container {
+      margin-bottom: 2rem;
+      padding: 2rem;
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    h1 {
+      color: #1e3d3d;
+      margin-bottom: 1rem;
+    }
+    .logo-row {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+    .logo-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .logo-caption {
+      margin-top: 1rem;
+      color: #6c757d;
+    }
+    .tagline {
+      font-style: italic;
+      color: #1e3d3d;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="logo-container">
+    <h1>RightsTree Logo Preview</h1>
+    <p class="tagline">Where Ideas Take Root</p>
+    
+    <div class="logo-row">
+      <div class="logo-item">
+        <img src="/images/rightstree_logo.png" alt="RightsTree Logo" height="60">
+        <div class="logo-caption">Standard Logo</div>
+      </div>
+      
+      <div class="logo-item">
+        <img src="/images/rightstree_logo_label_right.png" alt="RightsTree Logo with Label Right" height="60">
+        <div class="logo-caption">Logo with Label Right (Navigation)</div>
+      </div>
+    </div>
+    
+    <div class="logo-row">
+      <div class="logo-item">
+        <img src="/images/rightstree_logo_label_bottom.png" alt="RightsTree Logo with Label Bottom" height="80">
+        <div class="logo-caption">Logo with Label Bottom (Footer)</div>
+      </div>
+      
+      <div class="logo-item">
+        <img src="/images/rightstree_logo_cropped.png" alt="RightsTree Cropped Logo" height="60">
+        <div class="logo-caption">Cropped Logo (Favicon)</div>
+      </div>
+    </div>
+    
+    <div class="logo-row">
+      <div class="logo-item" style="background-color: #1e3d3d; padding: 1rem; border-radius: 8px;">
+        <img src="/images/rightstree_logo.png" alt="RightsTree Logo on Dark Background" height="60">
+        <div class="logo-caption" style="color: white;">Logo on Dark Background</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="logo-container">
+    <h1>UI Integration Preview</h1>
+    
+    <h2 style="font-size: 1.25rem; margin: 1.5rem 0 1rem;">Navigation Bar</h2>
+    <div style="display: flex; align-items: center; padding: 1rem; border: 1px solid #dee2e6; border-radius: 4px; background-color: white; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);">
+      <img src="/images/rightstree_logo_label_right.png" alt="RightsTree Logo" height="60" style="margin-right: 0.5rem;">
+    </div>
+    
+    <h2 style="font-size: 1.25rem; margin: 1.5rem 0 1rem;">Footer</h2>
+    <div style="display: flex; align-items: center; padding: 1rem; border: 1px solid #dee2e6; border-radius: 4px; background-color: white;">
+      <img src="/images/rightstree_logo_label_bottom.png" alt="RightsTree Logo with Label Bottom" height="60">
+    </div>
+    
+    <h2 style="font-size: 1.25rem; margin: 1.5rem 0 1rem;">Favicon</h2>
+    <div style="display: flex; align-items: center; padding: 1rem; border: 1px solid #dee2e6; border-radius: 4px; background-color: white;">
+      <div style="border: 1px solid #dee2e6; border-radius: 4px; padding: 0.5rem; display: inline-block;">
+        <img src="/images/rightstree_logo_cropped.png" alt="RightsTree Cropped Logo" height="32">
+      </div>
+      <div style="margin-left: 1rem; color: #6c757d;">← Browser tab icon</div>
+    </div>
+    
+    <h2 style="font-size: 1.25rem; margin: 1.5rem 0 1rem;">Homepage Hero</h2>
+    <div style="display: flex; flex-direction: column; align-items: center; padding: 2rem; border: 1px solid #dee2e6; border-radius: 4px; background-color: #f8f9fa;">
+      <img src="/images/rightstree_logo_label_bottom.png" alt="RightsTree Logo with Label Bottom" height="100" style="margin-bottom: 1rem;">
+      <div style="text-align: center;">
+        <h3 style="color: #1e3d3d; margin-bottom: 0.5rem;">Protect Your Intellectual Property</h3>
+        <p style="color: #6c757d;">Create, publish, and monetize your patent applications</p>
+      </div>
+    </div>
+    
+    <h2 style="font-size: 1.25rem; margin: 1.5rem 0 1rem;">Loading Screen</h2>
+    <div style="display: flex; flex-direction: column; align-items: center; padding: 2rem; border: 1px solid #dee2e6; border-radius: 4px; background-color: white;">
+      <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+      <img src="/images/rightstree_logo.png" alt="RightsTree Logo" height="60" style="margin-bottom: 1rem;">
+      <div style="text-align: center;">
+        <p style="color: #6c757d;">Loading your patent applications...</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="300" height="300" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+  <g fill="none" stroke="#1e3d3d" stroke-width="10" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Main vertical stem -->
+    <path d="M150 40 L150 220" />
+    
+    <!-- Base/roots -->
+    <path d="M120 250 L150 220 L180 250" />
+    
+    <!-- Top branch and circle -->
+    <path d="M150 80 L150 40" />
+    <circle cx="150" cy="40" r="15" fill="white" />
+    
+    <!-- Upper right branch and circle -->
+    <path d="M150 80 L200 50" />
+    <circle cx="200" cy="50" r="15" fill="white" />
+    
+    <!-- Upper left branch and circle -->
+    <path d="M150 80 L100 50" />
+    <circle cx="100" cy="50" r="15" fill="white" />
+    
+    <!-- Middle left branch and circle -->
+    <path d="M150 140 L100 140" />
+    <circle cx="100" cy="140" r="15" fill="white" />
+    
+    <!-- The 'R' curve -->
+    <path d="M150 110 C180 110, 220 130, 220 180 C220 230, 200 250, 230 270" stroke-width="12" />
+  </g>
+</svg>

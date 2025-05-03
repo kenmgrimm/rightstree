@@ -3,62 +3,121 @@
 / Home page with options to create a new patent application
 / Follows mobile-first design principles with responsive layout
 
-.container.py-5
-  .row.justify-content-center
-    .col-12.col-md-10.col-lg-8.text-center
-      h1.display-4.mb-4 RightsTree
-      p.lead.mb-5 AI-powered patent application assistance
-      
-      .card.shadow-sm.mb-5
+/ Hero section with prominent logo
+.bg-light.py-5.mb-5
+  .container
+    .row.justify-content-center
+      .col-12.col-md-10.col-lg-8.text-center
+        .mb-4
+          = image_tag "/images/rightstree_logo_label_bottom.png", alt: "RightsTree", class: "img-fluid", style: "max-height: 220px;"
+          - logger.debug "[Logo Debug] Using rightstree_logo_label_bottom.png on homepage hero (size: 220px)"
+        h2.display-6.mb-3.text-primary Where Ideas Take Root
+        p.lead.mb-4 Protect your intellectual property and bring your innovations to market
+        
+        .d-grid.gap-2.d-md-flex.justify-content-md-center.mb-4
+          = link_to create_stub_patent_applications_path, class: "btn btn-primary btn-lg px-4 me-md-2" do
+            i.bi.bi-plus-circle.me-2
+            | Create Patent Application
+          = link_to patent_applications_path, class: "btn btn-outline-secondary btn-lg px-4" do
+            i.bi.bi-collection.me-2
+            | My Patents
+
+.container
+  / Main content section
+  .row.justify-content-center.mb-5
+    .col-12.col-md-10.col-lg-8
+      .card.shadow-sm.border-0
         .card-body.p-4.p-md-5
-          h2.card-title.mb-4 Welcome to RightsTree
+          h2.card-title.mb-4.text-center Welcome to RightsTree
           p.card-text.mb-4
             | Our AI-powered platform helps inventors document their ideas and prepare for patent applications.
-            | Get started by creating a new patent application below.
+            | With RightsTree, you can easily create, manage, and publish your patent applications.
           
-          = link_to create_stub_patent_applications_path, class: "btn btn-primary btn-lg" do
-            i.bi.bi-plus-circle.me-2
-            | Create New Patent Application
-            
-  .row.justify-content-center.mt-4
-    .col-12.col-md-10.col-lg-8
-      .card.shadow-sm.mb-4
-        .card-body.p-4
-          h3.card-title.mb-3 How It Works
+          .text-center.mb-4
+            = image_tag "/images/rightstree_logo_cropped.png", alt: "RightsTree Icon", height: 60, class: "mb-3"
+            - logger.debug "[Logo Debug] Using rightstree_logo_cropped.png in welcome card"
           
-          .row.g-4
-            .col-12.col-md-4.text-center
-              .p-3
-                i.bi.bi-lightbulb.display-4.text-primary.mb-3
-                h4 Document Your Idea
-                p Describe your problem and solution in detail
+          .d-grid.d-md-block.text-center
+            = link_to create_stub_patent_applications_path, class: "btn btn-primary btn-lg" do
+              i.bi.bi-plus-circle.me-2
+              | Start Creating Now
             
-            .col-12.col-md-4.text-center
-              .p-3
-                i.bi.bi-chat-dots.display-4.text-primary.mb-3
-                h4 Chat with AI
-                p Get guidance and feedback from our AI assistant
+  / How It Works section
+  .row.justify-content-center.mb-5
+    .col-12
+      h2.text-center.mb-4 How It Works
+      .row.g-4
+        .col-12.col-md-4
+          .card.h-100.border-0.shadow-sm.text-center
+            .card-body.p-4
+              .rounded-circle.bg-primary.bg-opacity-10.p-3.d-inline-block.mb-3
+                i.bi.bi-lightbulb.display-4.text-primary
+              h4.card-title Document Your Idea
+              p.card-text.text-muted
+                | Describe your problem and solution in detail using our structured approach
+                | that guides you through the entire process.
+              - logger.debug "[Debug] Rendering 'Document Your Idea' card in How It Works section"
+        
+        .col-12.col-md-4
+          .card.h-100.border-0.shadow-sm.text-center
+            .card-body.p-4
+              .rounded-circle.bg-primary.bg-opacity-10.p-3.d-inline-block.mb-3
+                i.bi.bi-chat-dots.display-4.text-primary
+              h4.card-title Chat with AI
+              p.card-text.text-muted
+                | Get real-time guidance and feedback from our AI assistant to refine
+                | your patent application and improve your chances of success.
+              - logger.debug "[Debug] Rendering 'Chat with AI' card in How It Works section"
+        
+        .col-12.col-md-4
+          .card.h-100.border-0.shadow-sm.text-center
+            .card-body.p-4
+              .rounded-circle.bg-primary.bg-opacity-10.p-3.d-inline-block.mb-3
+                i.bi.bi-file-earmark-text.display-4.text-primary
+              h4.card-title Publish & Market
+              p.card-text.text-muted
+                | Publish your patent application to our marketplace where interested
+                | parties can discover and potentially purchase your innovation.
+              - logger.debug "[Debug] Rendering 'Publish & Market' card in How It Works section"
+  
+  / Why Use RightsTree section with logo
+  .row.justify-content-center.mb-5
+    .col-12
+      .card.border-0.shadow-sm.bg-light
+        .card-body.p-4.p-md-5
+          .row.align-items-center
+            .col-md-4.text-center.mb-4.mb-md-0
+              = image_tag "/images/rightstree_logo.png", alt: "RightsTree", class: "img-fluid", style: "max-height: 150px;"
+              - logger.debug "[Logo Debug] Using rightstree_logo.png in Why Use RightsTree section"
             
-            .col-12.col-md-4.text-center
-              .p-3
-                i.bi.bi-file-earmark-text.display-4.text-primary.mb-3
-                h4 Export Your Work
-                p Save your work for patent filing preparation
+            .col-md-8
+              h2.card-title.mb-4 Why Use RightsTree?
+              
+              .row
+                .col-md-6
+                  ul.list-unstyled
+                    li.mb-3
+                      .d-flex.align-items-center
+                        .rounded-circle.bg-success.p-2.me-3
+                          i.bi.bi-check2.text-white
+                        span.text-muted Structured approach to documenting inventions
+                    
+                    li.mb-3
+                      .d-flex.align-items-center
+                        .rounded-circle.bg-success.p-2.me-3
+                          i.bi.bi-check2.text-white
+                        span.text-muted AI guidance to help refine your ideas
                 
-      .card.shadow-sm
-        .card-body.p-4
-          h3.card-title.mb-3 Why Use RightsTree?
-          
-          ul.list-group.list-group-flush
-            li.list-group-item.border-0.ps-0
-              i.bi.bi-check-circle-fill.text-success.me-2
-              | Structured approach to documenting inventions
-            li.list-group-item.border-0.ps-0
-              i.bi.bi-check-circle-fill.text-success.me-2
-              | AI guidance to help refine your ideas
-            li.list-group-item.border-0.ps-0
-              i.bi.bi-check-circle-fill.text-success.me-2
-              | Secure storage of your intellectual property
-            li.list-group-item.border-0.ps-0
-              i.bi.bi-check-circle-fill.text-success.me-2
-              | Mobile-friendly interface for working on the go
+                .col-md-6
+                  ul.list-unstyled
+                    li.mb-3
+                      .d-flex.align-items-center
+                        .rounded-circle.bg-success.p-2.me-3
+                          i.bi.bi-check2.text-white
+                        span.text-muted Secure storage of your intellectual property
+                    
+                    li.mb-3
+                      .d-flex.align-items-center
+                        .rounded-circle.bg-success.p-2.me-3
+                          i.bi.bi-check2.text-white
+                        span.text-muted Marketplace to monetize your innovations
