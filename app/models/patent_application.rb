@@ -46,15 +46,7 @@ class PatentApplication < ApplicationRecord
       updated_at: updated_at
     }
   end
-
-  private
-
-  # Ensures chat_history is properly structured as an array
-  def ensure_chat_history_structure
-    self.chat_history ||= []
-    Rails.logger.debug("[PatentApplication] Ensuring chat_history structure: #{chat_history.inspect}")
-  end
-
+  
   # Status management methods
   def draft?
     status == STATUSES[:draft]
@@ -66,6 +58,14 @@ class PatentApplication < ApplicationRecord
 
   def published?
     status == STATUSES[:published]
+  end
+
+  private
+
+  # Ensures chat_history is properly structured as an array
+  def ensure_chat_history_structure
+    self.chat_history ||= []
+    Rails.logger.debug("[PatentApplication] Ensuring chat_history structure: #{chat_history.inspect}")
   end
 
   def publishing_or_published?
