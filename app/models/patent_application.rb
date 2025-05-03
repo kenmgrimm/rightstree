@@ -46,7 +46,7 @@ class PatentApplication < ApplicationRecord
       updated_at: updated_at
     }
   end
-  
+
   # Status management methods
   def draft?
     status == STATUSES[:draft]

@@ -38,10 +38,10 @@ class PatentService
       messages << { role: "system", content: "Do not propose or extrapolate a solution until the user provides one. Only prompt the user to describe their own solution." }
     end
     messages << { role: "user", content: user_input }
-    
+
     # Standardize the messages for OpenAI API
     standardized_messages = standardize_messages_for_openai(messages)
-    
+
     Rails.logger.debug("[PatentService] Conversation so far: #{standardized_messages.inspect}")
 
     # Check for off-topic requests (basic heuristic)
@@ -181,40 +181,40 @@ class PatentService
     Rails.logger.debug("[PatentService] Using cleaned response: #{cleaned_response[0..100]}...")
     [ nil, nil, cleaned_response ]
   end
-  
+
   # Standardize messages for OpenAI API to ensure consistent format
   # OpenAI API expects each message to have 'role' and 'content' keys
   def self.standardize_messages_for_openai(messages)
     Rails.logger.debug("[PatentService#standardize_messages_for_openai] Standardizing #{messages.size} messages")
-    
+
     standardized = messages.map do |msg|
       # Extract role - could be symbol or string key
-      role = msg[:role] || msg['role']
-      
+      role = msg[:role] || msg["role"]
+
       # Extract content based on message format
-      if role == 'assistant' || role == :assistant
+      if role == "assistant" || role == :assistant
         # For assistant messages, check if content is a hash with our standardized format
-        content_hash = msg[:content] || msg['content']
-        
-        if content_hash.is_a?(Hash) && (content_hash['message'] || content_hash[:message])
+        content_hash = msg[:content] || msg["content"]
+
+        if content_hash.is_a?(Hash) && (content_hash["message"] || content_hash[:message])
           # If it's our standardized format, use the message field
-          content = content_hash['message'] || content_hash[:message]
+          content = content_hash["message"] || content_hash[:message]
         else
           # Otherwise use the content directly
           content = content_hash
         end
       else
         # For user/system messages, get content from message or content field
-        content = msg[:message] || msg['message'] || msg[:content] || msg['content']
+        content = msg[:message] || msg["message"] || msg[:content] || msg["content"]
       end
-      
+
       # Ensure content is a string
       content = content.to_s
-      
+
       # Create a standardized message with string keys as expected by OpenAI API
       { "role" => role.to_s, "content" => content }
     end
-    
+
     Rails.logger.debug("[PatentService#standardize_messages_for_openai] Standardized messages: #{standardized.inspect}") if Rails.env.development?
     standardized
   end

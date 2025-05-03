@@ -16,7 +16,7 @@ Rails.application.routes.draw do
     collection do
       # Route for creating a stub patent application and redirecting to edit
       get :create_stub
-      
+
       # Route for the patent marketplace (published patents)
       get :marketplace
     end
@@ -27,7 +27,7 @@ Rails.application.routes.draw do
 
       # Route for updating problem statement from AI suggestions
       patch :update_problem
-      
+
       # Route for updating solution from AI suggestions
       patch :update_solution
 

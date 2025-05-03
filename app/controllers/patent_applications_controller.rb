@@ -15,32 +15,32 @@ class PatentApplicationsController < ApplicationController
   # Lists all patent applications owned by the current user
   def index
     Rails.logger.debug("[PatentApplicationsController#index] Listing all patent applications")
-    
+
     # Get all patent applications (would be scoped to current_user in a real app)
     @patent_applications = PatentApplication.all.order(updated_at: :desc)
-    
+
     # Group applications by status for easier display
     @draft_applications = @patent_applications.select(&:draft?)
     @complete_applications = @patent_applications.select(&:complete?)
     @published_applications = @patent_applications.select(&:published?)
-    
+
     Rails.logger.debug("[PatentApplicationsController#index] Found #{@patent_applications.size} applications: " +
                       "#{@draft_applications.size} drafts, " +
                       "#{@complete_applications.size} complete, " +
                       "#{@published_applications.size} published")
   end
-  
+
   # GET /patent_applications/marketplace
   # Displays published patent applications available for browsing/bidding/purchasing
   def marketplace
     Rails.logger.debug("[PatentApplicationsController#marketplace] Showing patent marketplace")
-    
+
     # Only show published applications in the marketplace
-    @marketplace_patents = PatentApplication.where(status: 'published').order(updated_at: :desc)
-    
+    @marketplace_patents = PatentApplication.where(status: "published").order(updated_at: :desc)
+
     # In a real app, we might have additional filtering options here
     # such as by category, price range, etc.
-    
+
     Rails.logger.debug("[PatentApplicationsController#marketplace] Found #{@marketplace_patents.size} published patents")
   end
 
@@ -391,7 +391,7 @@ class PatentApplicationsController < ApplicationController
 
     redirect_to edit_patent_application_path(@patent_application)
   end
-  
+
   # Updates the solution with an AI suggestion
   def update_solution
     Rails.logger.debug("[PatentApplicationsController#update_solution] Updating solution for patent application: #{@patent_application.id}")
@@ -488,11 +488,11 @@ class PatentApplicationsController < ApplicationController
     when "assistant"
       # For assistant messages, handle content and extract problem/solution
       content = message[:content] || message["content"] || ""
-      
+
       # Get problem and solution directly from message or default to empty string
       problem = message[:problem] || message["problem"] || ""
       solution = message[:solution] || message["solution"] || ""
-      
+
       # If we have raw content that needs parsing and no problem/solution provided
       if content.is_a?(String) && !problem.present? && !solution.present?
         # Try to extract problem/solution from JSON if present
@@ -507,7 +507,7 @@ class PatentApplicationsController < ApplicationController
       else
         message_text = content
       end
-      
+
       # Debug logging
       Rails.logger.debug("[PatentApplicationsController#standardize_message] Processing assistant message: content=#{content.class}, problem=#{problem}, solution=#{solution}") if Rails.env.development?
 
