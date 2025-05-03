@@ -9,7 +9,7 @@
 # - Facilitating AI chat interactions through PatentService
 
 class PatentApplicationsController < ApplicationController
-  before_action :set_patent_application, only: [ :show, :edit, :update, :mark_complete, :publish, :chat ]
+  before_action :set_patent_application, only: [ :show, :edit, :update, :mark_complete, :publish, :chat, :update_problem ]
 
   # GET /patent_applications/new
   # Renders the form for a new patent application
@@ -157,7 +157,7 @@ class PatentApplicationsController < ApplicationController
       content: user_message,
       patent_application_id: @patent_application.id
     })
-    
+
     @patent_application.chat_history << user_standardized_msg
 
     # Save the patent application to persist the user message
@@ -257,13 +257,12 @@ class PatentApplicationsController < ApplicationController
     # Add AI response to chat history with proper content for display
     if ai_message.present?
       # Create a standardized AI response message using the new format
+      # Pass the extracted values directly to standardize_message to avoid nesting
       ai_response = standardize_message({
         role: "assistant",
-        content: {
-          problem: problem || "",
-          solution: solution || "",
-          message: message_text || display_content
-        },
+        content: message_text || display_content,
+        problem: problem || "",
+        solution: solution || "",
         patent_application_id: @patent_application.id
       })
 
@@ -426,7 +425,7 @@ class PatentApplicationsController < ApplicationController
     timestamp = message[:timestamp] || message["timestamp"] || Time.current.to_i
     role = message[:role] || message["role"]
     patent_app_id = message[:patent_application_id] || message["patent_application_id"] || @patent_application&.id
-    
+
     # Create a standardized message based on role
     case role
     when "system", "user"
@@ -438,22 +437,31 @@ class PatentApplicationsController < ApplicationController
         "patent_application_id" => patent_app_id
       }
     when "assistant"
-      # For assistant messages, parse the content if it's JSON or create a structured format
+      # For assistant messages, handle content and extract problem/solution
       content = message[:content] || message["content"] || ""
       
-      # Extract problem and solution if available
+      # Get problem and solution directly from message or default to empty string
       problem = message[:problem] || message["problem"] || ""
       solution = message[:solution] || message["solution"] || ""
       
-      # If we have raw content that needs parsing
+      # If we have raw content that needs parsing and no problem/solution provided
       if content.is_a?(String) && !problem.present? && !solution.present?
         # Try to extract problem/solution from JSON if present
         problem, solution, extracted_message = extract_problem_solution_message(content)
         message_text = extracted_message || content
+      elsif content.is_a?(Hash) && content["message"].present?
+        # If content is already a hash with message field, extract it to avoid nesting
+        message_text = content["message"]
+        # Also check if the hash has problem/solution fields
+        problem = content["problem"] if content["problem"].present? && !problem.present?
+        solution = content["solution"] if content["solution"].present? && !solution.present?
       else
         message_text = content
       end
       
+      # Debug logging
+      Rails.logger.debug("[PatentApplicationsController#standardize_message] Processing assistant message: content=#{content.class}, problem=#{problem}, solution=#{solution}") if Rails.env.development?
+
       # Create the standardized assistant message
       standardized = {
         "role" => "assistant",
@@ -484,8 +492,8 @@ class PatentApplicationsController < ApplicationController
 
   # Helper method to extract problem, solution, and message from content
   def extract_problem_solution_message(content)
-    return ["", "", content] unless content.present?
-    
+    return [ "", "", content ] unless content.present?
+
     # Check if the content looks like JSON
     if content.include?("{")
       # Try to extract JSON from code blocks
@@ -497,31 +505,31 @@ class PatentApplicationsController < ApplicationController
         json_match = content.match(/\{.*\}/m)
         content_to_parse = json_match[0] if json_match
       end
-      
+
       # If we found JSON to parse, extract the fields
       if content_to_parse.present?
         begin
           parsed = JSON.parse(content_to_parse)
-          
+
           # Extract fields based on what's available
           problem = parsed["problem"] if parsed["problem"].present?
           solution = parsed["solution"] if parsed["solution"].present?
-          
+
           # Look for message in different possible fields
           message = parsed["message"] || parsed["chat"] || ""
-          
+
           # If we found structured data, return it
           if problem || solution || message
-            return [problem || "", solution || "", message]
+            return [ problem || "", solution || "", message ]
           end
         rescue => e
           Rails.logger.error("[PatentApplicationsController#extract_problem_solution_message] JSON parsing error: #{e.message}")
         end
       end
     end
-    
+
     # If we couldn't extract structured data, return the original content as the message
-    ["", "", content.gsub(/```json|```/m, "").strip]
+    [ "", "", content.gsub(/```json|```/m, "").strip ]
   end
 
   # Permits the allowed parameters for creating/updating a patent application
