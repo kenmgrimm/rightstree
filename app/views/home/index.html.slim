@@ -11,7 +11,8 @@
         .mb-4
           = image_tag "/images/rightstree_logo_label_bottom.png", alt: "RightsTree", class: "img-fluid", style: "max-height: 220px;"
           - logger.debug "[Logo Debug] Using rightstree_logo_label_bottom.png on homepage hero (size: 220px)"
-        h2.display-6.mb-3 style="color: var(--primary-color);" Where Ideas Take Root
+        h2.display-6.mb-3.fst-italic style="color: var(--primary-color);" Where Ideas Take Root
+        - logger.debug "[Style Debug] Made tagline 'Where Ideas Take Root' italic on homepage"
         p.lead.mb-4 style="color: var(--text-primary);" Protect your intellectual property and bring your innovations to market
         - logger.debug "[Style Debug] Updated hero section text colors to use primary green and black"
         

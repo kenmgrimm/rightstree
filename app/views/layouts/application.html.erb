@@ -169,8 +169,9 @@
           <img src="/images/rightstree_logo_label_right_cropped.png" alt="Rightstree Logo" height="60" class="me-2">
           <div class="d-none">
             <!-- Tagline hidden as it's included in the logo -->
-            <small class="text-muted d-none d-sm-inline-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Where Ideas Take Root</small>
+            <small class="text-muted d-none d-sm-inline-block fst-italic" style="font-size: 0.75rem; letter-spacing: 0.5px;">Where Ideas Take Root</small>
           </div>
+          <% logger.debug "[Style Debug] Made tagline 'Where Ideas Take Root' italic in navigation bar" %>
         </a>
         <% logger.debug "[Logo Debug] Using rightstree_logo_label_right_cropped.png in navigation bar (height: 60px)" %>
         
@@ -260,6 +261,7 @@
               &copy; <%= Time.current.year %> Rightstree. All rights reserved.
               <span class="d-block d-md-inline ms-md-2 fst-italic">Where Ideas Take Root</span>
             </p>
+            <% logger.debug "[Style Debug] Tagline 'Where Ideas Take Root' is already italic in footer" %>
           </div>
           <div class="col-md-5 text-md-end">
             <a href="#" class="text-muted me-3">Terms</a>
