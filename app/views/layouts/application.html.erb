@@ -232,19 +232,19 @@
     
     <!-- Main Content -->
     <div class="container py-4">
-      <% if flash[:notice].present? %>
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-          <%= flash[:notice] %>
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-      <% end %>
-      
-      <% if flash[:alert].present? %>
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-          <%= flash[:alert] %>
-          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-      <% end %>
+      <!-- Flash messages container that can be updated via Turbo Streams -->
+      <div id="flash">
+        <% flash.each do |type, message| %>
+          <div class="alert alert-<%= type == 'notice' ? 'success' : 'danger' %> alert-dismissible fade show" role="alert">
+            <%= message %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+          </div>
+        <% end %>
+        
+        <% if Rails.env.development? && flash.any? %>
+          <!-- Flash message debug: <%= flash.to_hash.inspect %> -->
+        <% end %>
+      </div>
       
       <%= yield %>
     </div>

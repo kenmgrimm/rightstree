@@ -57,16 +57,21 @@ class PatentApplicationsController < ApplicationController
   def create_stub
     Rails.logger.debug("[PatentApplicationsController#create_stub] Creating stub patent application")
 
-    @patent_application = PatentApplication.create
+    # Generate a default title with timestamp to ensure uniqueness
+    default_title = "Patent Application #{Time.current.strftime('%Y-%m-%d %H:%M:%S')}"
+    Rails.logger.debug("[PatentApplicationsController#create_stub] Generated default title: #{default_title}")
+
+    # Create the patent application with the default title
+    @patent_application = PatentApplication.create(title: default_title)
 
     if @patent_application.persisted?
-      Rails.logger.debug("[PatentApplicationsController#create_stub] Created stub patent application: #{@patent_application.id}")
+      Rails.logger.debug("[PatentApplicationsController#create_stub] Created stub patent application: #{@patent_application.id} with title: #{@patent_application.title}")
       # Redirect to edit path to ensure consistent user experience
       redirect_to edit_patent_application_path(@patent_application)
     else
       Rails.logger.error("[PatentApplicationsController#create_stub] Failed to create patent application: #{@patent_application.errors.full_messages.join(', ')}")
       # Fallback to the home page with an error message
-      redirect_to root_path, alert: "Unable to create a new patent application. Please try again."
+      redirect_to root_path, alert: "Unable to create a new patent application: #{@patent_application.errors.full_messages.join(', ')}. Please try again."
     end
   end
 
@@ -583,6 +588,7 @@ class PatentApplicationsController < ApplicationController
 
   # Permits the allowed parameters for creating/updating a patent application
   def patent_application_params
-    params.require(:patent_application).permit(:problem, :solution, :status)
+    Rails.logger.debug("[PatentApplicationsController#patent_application_params] Processing parameters: #{params[:patent_application].inspect}")
+    params.require(:patent_application).permit(:title, :problem, :solution, :status)
   end
 end
