@@ -1,0 +1,92 @@
+/* Patent Application specific styles */
+
+/* Variables for consistent styling */
+:root {
+  --primary-color: #4361ee;
+  --accent-color: #3a0ca3;
+  --surface-color: #f8f9fa;
+  --text-primary: #212529;
+  --text-muted: #6c757d;
+}
+
+/* Chat container styles */
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 200px); /* Adjust height to fit within viewport */
+  max-height: 800px; /* Maximum height */
+  overflow: hidden; /* Prevent overflow */
+  border: 1px solid #e0e0e0;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Chat messages container with scrolling */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto; /* Enable vertical scrolling */
+  padding: 1rem;
+  background-color: var(--surface-color);
+  border-bottom: 1px solid #e0e0e0;
+  max-height: calc(100vh - 320px); /* Adjust to leave room for header and input */
+}
+
+/* Chat form container */
+.chat-form {
+  padding: 0.75rem;
+  background-color: var(--surface-color);
+  border-bottom-left-radius: 0.5rem;
+  border-bottom-right-radius: 0.5rem;
+  margin-top: auto; /* Push to bottom */
+  flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* Patent application container */
+.patent-application-container {
+  padding: 1rem;
+  height: 100%;
+}
+
+/* Responsive adjustments - mobile first approach */
+/* Base styles are for mobile, then scale up */
+.chat-container {
+  height: calc(100vh - 240px); /* Base height for mobile */
+  max-height: 600px;
+}
+
+.chat-messages {
+  max-height: calc(100vh - 360px); /* Base max-height for mobile */
+}
+
+/* Tablet breakpoint */
+@media (min-width: 768px) {
+  .chat-container {
+    height: calc(100vh - 220px);
+    max-height: 700px;
+  }
+  
+  .chat-messages {
+    max-height: calc(100vh - 340px);
+  }
+}
+
+/* Desktop breakpoint */
+@media (min-width: 992px) {
+  .chat-container {
+    height: calc(100vh - 200px);
+    max-height: 800px;
+  }
+  
+  .chat-messages {
+    max-height: calc(100vh - 320px);
+  }
+}
+
+/* Debug info styling */
+.debug-info {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  border-top: 1px solid #dee2e6;
+  padding-top: 1rem;
+  margin-top: 2rem;
+}

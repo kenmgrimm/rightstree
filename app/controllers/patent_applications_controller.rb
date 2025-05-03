@@ -145,10 +145,17 @@ class PatentApplicationsController < ApplicationController
 
     # Initialize chat history if it doesn't exist
     @patent_application.chat_history ||= []
+    
+    # Debug logging
+    Rails.logger.debug("[PatentApplicationsController#chat] Chat history before adding user message: #{@patent_application.chat_history.inspect}")
 
     # Add user message to chat history with timestamp
     timestamp = Time.current.to_i
     @patent_application.chat_history << { role: "user", content: user_message, timestamp: timestamp }
+    
+    # Debug logging
+    Rails.logger.debug("[PatentApplicationsController#chat] Added user message: #{user_message}")
+    Rails.logger.debug("[PatentApplicationsController#chat] Chat history after adding user message: #{@patent_application.chat_history.inspect}")
 
     # Process with PatentService
     result = PatentService.guide_problem_solution(
@@ -163,16 +170,77 @@ class PatentApplicationsController < ApplicationController
     Rails.logger.debug("### result")
     pp result
 
-    # Update chat history with AI response
-    @patent_application.chat_history = result[:messages]
-    @patent_application.save
+    # Extract AI response and suggestions from the result with nil checks
+    ai_message = result[:ai_message] if result.is_a?(Hash)
+    suggested_problem = result[:ai_suggested_problem] if result.is_a?(Hash)
+    suggested_solution = result[:ai_suggested_solution] if result.is_a?(Hash)
+    
+    # Add comprehensive debug logging
+    Rails.logger.debug("[PatentApplicationsController#chat] AI message: #{ai_message.inspect}")
+    
+    # Extract chat content from AI message with error handling
+    extracted_chat = nil
+    begin
+      if ai_message.present?
+        # Extract the problem, solution, and chat content from the AI message
+        _, _, extracted_chat = PatentService.extract_problem_solution_from_history([{role: "assistant", content: ai_message}])
+        Rails.logger.debug("[PatentApplicationsController#chat] Successfully extracted chat content: #{extracted_chat.inspect}")
+      end
+    rescue => e
+      Rails.logger.error("[PatentApplicationsController#chat] Error extracting chat content: #{e.message}")
+      Rails.logger.error(e.backtrace.join("\n"))
+    end
+    
+    # Use extracted_chat if available, otherwise use a cleaned version of the AI message
+    display_content = if extracted_chat.present?
+      extracted_chat
+    elsif ai_message.present?
+      # Clean up the message by removing JSON formatting
+      ai_message.gsub(/```json|```/m, "").strip
+    else
+      "I'm sorry, I couldn't process that request properly."
+    end
+    
+    # Debug logging for extracted content
+    Rails.logger.debug("[PatentApplicationsController#chat] Extracted chat content: #{extracted_chat.inspect}")
+    Rails.logger.debug("[PatentApplicationsController#chat] Using display_content: #{display_content.inspect}")
+    
+    # Add AI response to chat history with proper content for display
+    if ai_message.present?
+      # Make sure we're storing the parsed chat content, not the raw JSON
+      Rails.logger.debug("[PatentApplicationsController#chat] Adding AI response to chat history: #{display_content ? display_content[0..100] : 'nil'}...")
+      
+      # Store the properly formatted message in the chat history
+      @patent_application.chat_history << { role: "assistant", content: display_content, timestamp: Time.current.to_i }
+      
+      # Save the updated chat history
+      if @patent_application.save
+        Rails.logger.debug("[PatentApplicationsController#chat] Successfully saved chat history with #{@patent_application.chat_history.size} messages")
+      else
+        Rails.logger.error("[PatentApplicationsController#chat] Failed to save chat history: #{@patent_application.errors.full_messages.join(', ')}")
+      end
+    end
+    
+    Rails.logger.debug("[PatentApplicationsController#chat] Updated chat history with #{@patent_application.chat_history.size} messages")
+    Rails.logger.debug("[PatentApplicationsController#chat] Chat history: #{@patent_application.chat_history.inspect}")
 
-    # Extract AI suggestions
-    suggested_problem, suggested_solution, chat = PatentService.extract_problem_solution_from_history(@patent_application.chat_history)
-
-    Rails.logger.debug("[PatentApplicationsController#chat] AI response: #{chat}")
+    # Log the extracted information
+    Rails.logger.debug("[PatentApplicationsController#chat] AI response: #{display_content ? display_content[0..100] : 'nil'}...")
     Rails.logger.debug("[PatentApplicationsController#chat] AI suggested problem: #{suggested_problem}")
     Rails.logger.debug("[PatentApplicationsController#chat] AI suggested solution: #{suggested_solution}")
+    
+    # Log the chat history in a safe way
+    history_summary = if @patent_application.chat_history.present?
+      @patent_application.chat_history.map do |m|
+        role = m[:role].to_s
+        content_preview = m[:content] ? m[:content].to_s[0..30] : 'nil'
+        "#{role}: #{content_preview}..."
+      end.join(', ')
+    else
+      "<empty>"
+    end
+    
+    Rails.logger.debug("[PatentApplicationsController#chat] Chat history after processing: #{history_summary}")
 
     respond_to do |format|
       format.turbo_stream {
@@ -185,12 +253,15 @@ class PatentApplicationsController < ApplicationController
           )
         ]
 
-        # Then add the AI response to the chat container
+        # Then add the AI response to the chat container with error handling
+        safe_content = display_content.present? ? display_content : "I'm sorry, I couldn't process that request properly."
+        Rails.logger.debug("[PatentApplicationsController#chat] Using safe_content for display: #{safe_content[0..100]}...")
+        
         ai_streams = [
           turbo_stream.append(
             "chat_messages",
             partial: "patent_applications/message",
-            locals: { message: { role: "assistant", content: chat, timestamp: Time.current.to_i } }
+            locals: { message: { role: "assistant", content: safe_content, timestamp: Time.current.to_i } }
           ),
           # Update the chat form with the current state
           turbo_stream.replace(

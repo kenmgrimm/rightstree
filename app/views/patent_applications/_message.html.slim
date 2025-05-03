@@ -12,6 +12,17 @@
 - is_user = message[:role] == 'user'
 - timestamp = message[:timestamp] ? Time.at(message[:timestamp]).strftime("%H:%M") : Time.current.strftime("%H:%M")
 
+/ Process content to extract chat message from JSON if needed
+- content = message[:content]
+- if !is_user && content.present? && content.include?('```json')
+  - begin
+    - json_block = content[/```json\s*(\{.*?\})\s*```/m, 1]
+    - if json_block.present?
+      - parsed = JSON.parse(json_block)
+      - content = parsed["chat"] if parsed["chat"].present?
+  - rescue => e
+    - Rails.logger.error("[Message Partial] Error parsing JSON: #{e.message}") if Rails.env.development?
+
 .message.mb-4.d-flex class="#{is_user ? 'user-message justify-content-end' : 'ai-message'}" id=message_id data-timestamp=timestamp
   / For AI messages, show avatar on the left
   - unless is_user
@@ -23,7 +34,7 @@
   .message-content.p-3.rounded-3.shadow-sm class="#{is_user ? 'text-white' : ''}" style="max-width: 85%; #{is_user ? 'background-color: var(--primary-color);' : 'background-color: var(--surface-color);'}"
     .message-body
       p.mb-1 style="#{is_user ? 'color: white;' : 'color: var(--text-primary);'}"
-        = message[:content]
+        = content
     .message-footer.d-flex.justify-content-between.align-items-center.mt-2
       small.opacity-75 style="#{is_user ? 'color: rgba(255,255,255,0.8);' : 'color: var(--text-muted);'}"
         = timestamp

@@ -13,17 +13,17 @@
     = link_to "View Application", patent_application_path(@patent_application), class: "btn btn-outline-secondary"
   
   .row
-    .col-md-7
-      / Main form for problem and solution in a Turbo Frame
+    .col-md-5.col-lg-4
+      / Main form for problem and solution in a Turbo Frame (40% of space)
       = turbo_frame_tag "patent_application_form" do
         = render "form", patent_application: @patent_application
     
-    .col-md-5
-      / AI Chat interface - same as in new/show views
+    .col-md-7.col-lg-8
+      / AI Chat interface - same as in new/show views (60% of space)
       .chat-container
-        h2 AI Assistant
+        h2.mb-3.px-3.pt-3 AI Assistant
         
-        / Chat messages will be displayed here
+        / Chat messages will be displayed here - constrained height with scrolling
         #chat_messages.chat-messages
           / Display existing chat history
           - if @patent_application.chat_history.present?
@@ -34,7 +34,7 @@
             .message.ai-message
               p Hello! I'm your AI assistant. I can help you refine your patent application's problem and solution statements. What would you like to improve?
         
-        / Chat form
+        / Chat form - fixed at bottom of container
         #chat_form.chat-form
           = render "chat_form", patent_application: @patent_application
         

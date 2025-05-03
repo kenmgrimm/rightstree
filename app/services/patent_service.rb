@@ -134,46 +134,49 @@ class PatentService
     last_assistant = messages.reverse.find { |m| m[:role] == "assistant" }
     return [ nil, nil, nil ] unless last_assistant && last_assistant[:content]
     text = last_assistant[:content]
+    
+    Rails.logger.debug("[PatentService] Extracting from content: #{text[0..100]}...")
 
-    # First, try to extract the chat content directly from the raw response
-    # This is useful if the AI didn't format the response as JSON
-    raw_chat = text.gsub(/```json.*?```/m, "").strip
-
-    # Then try to extract the JSON block if it exists
-    json_block = text[/```json\s*(\{.*?\})\s*```/m, 1]
-    problem = nil
-    solution = nil
-    chat = nil
-
-    if json_block
-      begin
-        parsed = JSON.parse(json_block)
-        problem = parsed["problem"]
-        solution = parsed["solution"]
-        chat = parsed["chat"]
-
-        # Log the extracted values
-        Rails.logger.debug("[AI.chat] #{chat.inspect}")
-        Rails.logger.debug("[AI.problem] #{problem.inspect}")
-        Rails.logger.debug("[AI.solution] #{solution.inspect}")
-
-        # Return the extracted values if they're all present
-        [ problem, solution, chat ]
-      rescue JSON::ParserError => e
-        Rails.logger.warn("AI response JSON parse error: #{e.message}")
+    # Check if the content looks like raw JSON (starts with ```json)
+    if text.strip.start_with?('```json')
+      # Extract the JSON block
+      json_block = text[/```json\s*(\{.*?\})\s*```/m, 1]
+      
+      if json_block
+        begin
+          Rails.logger.debug("[PatentService] Found JSON block: #{json_block}")
+          parsed = JSON.parse(json_block)
+          problem = parsed["problem"]
+          solution = parsed["solution"]
+          chat = parsed["chat"]
+          
+          # Log the extracted values
+          Rails.logger.debug("[PatentService] Extracted chat: #{chat.inspect}")
+          Rails.logger.debug("[PatentService] Extracted problem: #{problem.inspect}")
+          Rails.logger.debug("[PatentService] Extracted solution: #{solution.inspect}")
+          
+          # Return the extracted chat content instead of the raw JSON
+          if chat.present?
+            return [ problem, solution, chat ]
+          end
+        rescue JSON::ParserError => e
+          Rails.logger.warn("[PatentService] JSON parse error: #{e.message}")
+        end
       end
-    else
-      Rails.logger.warn("[AI] Missing JSON code block in response: #{text}")
     end
-
+    
     # If we couldn't extract from JSON or some fields were missing,
-    # use the raw text as the chat content
-    if raw_chat.present?
-      Rails.logger.debug("[AI] Using raw text as chat content: #{raw_chat}")
-      return [ nil, nil, raw_chat ]
+    # clean the text by removing JSON code blocks
+    cleaned_text = text.gsub(/```json.*?```/m, "").strip
+    
+    if cleaned_text.present?
+      Rails.logger.debug("[PatentService] Using cleaned text: #{cleaned_text}")
+      return [ nil, nil, cleaned_text ]
     end
-
-    # If all else fails, use the entire response
-    [ nil, nil, text ]
+    
+    # If all else fails, use the entire response but remove the code block markers
+    cleaned_response = text.gsub(/```json|```/m, "").strip
+    Rails.logger.debug("[PatentService] Using cleaned response: #{cleaned_response[0..100]}...")
+    [ nil, nil, cleaned_response ]
   end
 end
