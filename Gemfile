@@ -41,6 +41,8 @@ gem "stimulus-rails" # Hotwire Stimulus for Rails
 gem "importmap-rails" # Use Import Maps for JavaScript modules
 
 group :development, :test do
+  gem "amazing_print"
+
   # Load .env for environment variables in dev/test
   gem "dotenv-rails"
 

@@ -21,6 +21,9 @@ Rails.application.routes.draw do
       # Route for AI chat interactions with existing applications only
       post :chat
 
+      # Route for updating problem statement from AI suggestions
+      patch :update_problem
+
       # Route for marking an application as complete (ready for publishing)
       patch :mark_complete
 
