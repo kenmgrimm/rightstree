@@ -34,18 +34,19 @@
     
     <style>
       :root {
-        /* Color palette based on the RightsTree logo */
-        --primary-color: #1e3d3d; /* Dark teal from logo */
-        --primary-light: #e6f0f0; /* Light teal */
-        --secondary-color: #6c757d; /* Neutral gray */
-        --accent-color: #2a5050; /* Slightly lighter teal */
+        /* Color palette based on the RightsTree logo and user preferences */
+        --primary-color: #1e3d3d; /* Dark green from logo */
+        --primary-light: #e6f0f0; /* Light green */
+        --secondary-color: #8B5A2B; /* Brown as secondary color */
+        --secondary-light: #F5F0E6; /* Light brown */
+        --accent-color: #2a5050; /* Slightly lighter green */
         --success-color: #10b981; /* Keep green for success states */
         --background-color: #ffffff;
         --surface-color: #f8f9fa;
         --surface-alt-color: #f0f2f5;
-        --text-primary: #1a1a1a;
-        --text-secondary: #4b5563;
-        --text-muted: #6b7280;
+        --text-primary: #000000; /* Black for most text */
+        --text-secondary: #333333; /* Dark gray, almost black */
+        --text-muted: #555555; /* Darker muted text */
         --border-color: #e5e7eb;
         
         /* Spacing */
@@ -68,20 +69,51 @@
         line-height: 1.5;
       }
       
-      /* Override Bootstrap styles with our custom variables */
+      /* Bootstrap overrides */
       .btn-primary {
         background-color: var(--primary-color);
         border-color: var(--primary-color);
       }
       
-      .btn-primary:hover {
-        background-color: #0052cc;
-        border-color: #0052cc;
+      .btn-primary:hover, .btn-primary:focus {
+        background-color: var(--accent-color);
+        border-color: var(--accent-color);
+      }
+      
+      .btn-secondary {
+        background-color: var(--secondary-color);
+        border-color: var(--secondary-color);
+      }
+      
+      .btn-secondary:hover, .btn-secondary:focus {
+        background-color: #7A4A1D; /* Darker brown */
+        border-color: #7A4A1D;
+      }
+      
+      .btn-outline-secondary {
+        color: var(--secondary-color);
+        border-color: var(--secondary-color);
+      }
+      
+      .btn-outline-secondary:hover, .btn-outline-secondary:focus {
+        background-color: var(--secondary-color);
+        border-color: var(--secondary-color);
+      }
+      
+      .text-primary {
+        color: var(--primary-color) !important;
+      }
+      
+      .text-secondary {
+        color: var(--secondary-color) !important;
       }
       
       .bg-light {
         background-color: var(--surface-color) !important;
       }
+      
+      /* Debug logging for color scheme */
+      <% logger.debug "[Style Debug] Applied green and brown color scheme to Bootstrap components" %>
       
       .border {
         border-color: var(--border-color) !important;
