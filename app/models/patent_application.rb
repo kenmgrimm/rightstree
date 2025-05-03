@@ -21,11 +21,20 @@ class PatentApplication < ApplicationRecord
   # Set default status to draft
   attribute :status, :string, default: STATUSES[:draft]
 
+  # Always require a title
+  validates :title, presence: true
+
+  # Title must be unique within the context of a user
+  validates :title, uniqueness: { scope: :user_id, message: "must be unique for this user" }
+
   # Conditional validations based on status
   with_options if: :publishing_or_published? do
     validates :problem, presence: true
     validates :solution, presence: true
   end
+
+  # Debug logging for title validation
+  after_validation :log_title_validation
 
   # Ensure chat_history is always an array of messages
   before_validation :ensure_chat_history_structure
@@ -66,6 +75,15 @@ class PatentApplication < ApplicationRecord
   def ensure_chat_history_structure
     self.chat_history ||= []
     Rails.logger.debug("[PatentApplication] Ensuring chat_history structure: #{chat_history.inspect}")
+  end
+
+  # Log title validation for debugging
+  def log_title_validation
+    if errors[:title].any?
+      Rails.logger.debug("[PatentApplication#log_title_validation] Title validation failed: #{errors[:title].join(', ')}")
+    else
+      Rails.logger.debug("[PatentApplication#log_title_validation] Title validated successfully: '#{title}'")
+    end
   end
 
   def publishing_or_published?

@@ -19,7 +19,21 @@ export default class extends Controller {
     console.debug("[ChatFormController] Connected")
     this.adjustHeight()
     this.messageInputTarget.focus()
+    
+    // Scroll to bottom immediately
     this.scrollChatToBottom()
+    
+    // Also scroll after a short delay to ensure all content is loaded
+    setTimeout(() => {
+      this.scrollChatToBottom()
+      console.debug("[ChatFormController] Scrolled to bottom after delay")
+    }, 100)
+    
+    // And again after images and other resources might have loaded
+    setTimeout(() => {
+      this.scrollChatToBottom()
+      console.debug("[ChatFormController] Scrolled to bottom after longer delay")
+    }, 500)
     
     // Add a MutationObserver to scroll to bottom when new messages are added
     this.setupScrollObserver()
@@ -44,14 +58,26 @@ export default class extends Controller {
   
   // Scroll the chat container to the bottom
   scrollChatToBottom() {
-    // Get both mobile and desktop chat containers
+    // Get all possible chat containers
+    const chatMessages = document.getElementById('chat_messages')
     const mobileChatMessages = document.getElementById('mobile_chat_messages')
     const desktopChatMessages = document.getElementById('desktop_chat_messages')
+    
+    // Scroll main chat container if it exists
+    if (chatMessages) {
+      chatMessages.scrollTop = chatMessages.scrollHeight
+      console.debug("[ChatFormController] Scrolled main chat to bottom", {
+        container: 'chat_messages',
+        scrollHeight: chatMessages.scrollHeight,
+        scrollTop: chatMessages.scrollTop
+      })
+    }
     
     // Scroll mobile container if it exists
     if (mobileChatMessages) {
       mobileChatMessages.scrollTop = mobileChatMessages.scrollHeight
       console.debug("[ChatFormController] Scrolled mobile chat to bottom", {
+        container: 'mobile_chat_messages',
         scrollHeight: mobileChatMessages.scrollHeight,
         scrollTop: mobileChatMessages.scrollTop
       })
@@ -61,6 +87,7 @@ export default class extends Controller {
     if (desktopChatMessages) {
       desktopChatMessages.scrollTop = desktopChatMessages.scrollHeight
       console.debug("[ChatFormController] Scrolled desktop chat to bottom", {
+        container: 'desktop_chat_messages',
         scrollHeight: desktopChatMessages.scrollHeight,
         scrollTop: desktopChatMessages.scrollTop
       })
@@ -69,47 +96,72 @@ export default class extends Controller {
   
   // Set up an observer to watch for changes in the chat containers
   setupScrollObserver() {
-    // Get both mobile and desktop chat containers
+    // Get all possible chat containers
+    const chatMessages = document.getElementById('chat_messages')
     const mobileChatMessages = document.getElementById('mobile_chat_messages')
     const desktopChatMessages = document.getElementById('desktop_chat_messages')
     
-    if (!mobileChatMessages && !desktopChatMessages) {
-      console.error("[ChatFormController] Could not find any chat messages container")
-      return
+    // Create a new observer that will scroll to bottom when changes are detected
+    const createObserver = () => {
+      return new MutationObserver((mutations) => {
+        console.debug("[ChatFormController] Chat content changed, scrolling to bottom", {
+          mutations: mutations.length
+        })
+        this.scrollChatToBottom()
+      })
     }
     
-    // Create a new observer
-    this.chatObserver = new MutationObserver((mutations) => {
-      // When changes are detected, scroll to bottom
-      this.scrollChatToBottom()
-    })
-    
-    // Observe mobile container if it exists
-    if (mobileChatMessages) {
-      this.chatObserver.observe(mobileChatMessages, { 
+    // Set up observer for main chat container
+    if (chatMessages) {
+      this.chatObserver = createObserver()
+      this.chatObserver.observe(chatMessages, {
         childList: true,  // Watch for added/removed nodes
         subtree: true     // Watch the entire subtree
+      })
+      console.debug("[ChatFormController] Set up mutation observer for main chat container")
+    }
+    
+    // Set up observer for mobile chat container if it exists
+    if (mobileChatMessages) {
+      // Create a new observer if we don't already have one
+      if (!this.chatObserver) {
+        this.chatObserver = createObserver()
+      }
+      
+      this.chatObserver.observe(mobileChatMessages, { 
+        childList: true,
+        subtree: true
       })
       console.debug("[ChatFormController] Set up mutation observer for mobile chat container")
     }
     
-    // Observe desktop container if it exists
+    // Set up observer for desktop chat container if it exists
     if (desktopChatMessages) {
-      // Create a separate observer for desktop if mobile already has one
-      if (mobileChatMessages) {
-        this.desktopChatObserver = new MutationObserver(() => this.scrollChatToBottom())
+      // Create a separate observer for desktop if we already have an observer for another container
+      if (this.chatObserver && (chatMessages || mobileChatMessages)) {
+        this.desktopChatObserver = createObserver()
         this.desktopChatObserver.observe(desktopChatMessages, { 
-          childList: true, 
-          subtree: true 
+          childList: true,
+          subtree: true
         })
+        console.debug("[ChatFormController] Set up separate mutation observer for desktop chat container")
       } else {
-        // Use the main observer if there's no mobile container
-        this.chatObserver.observe(desktopChatMessages, { 
-          childList: true, 
-          subtree: true 
+        // Use the main observer if no other container has been observed
+        if (!this.chatObserver) {
+          this.chatObserver = createObserver()
+        }
+        
+        this.chatObserver.observe(desktopChatMessages, {
+          childList: true,
+          subtree: true
         })
+        console.debug("[ChatFormController] Set up mutation observer for desktop chat container")
       }
-      console.debug("[ChatFormController] Set up mutation observer for desktop chat container")
+    }
+    
+    // Log error if no chat container was found
+    if (!chatMessages && !mobileChatMessages && !desktopChatMessages) {
+      console.error("[ChatFormController] Could not find any chat messages container")
     }
   }
   
@@ -173,6 +225,21 @@ export default class extends Controller {
     this.submitButtonTarget.disabled = false
     this.buttonTextTarget.classList.remove("opacity-0")
     this.spinnerTarget.classList.add("d-none")
+    
+    // Ensure chat is scrolled to bottom after message is sent
+    this.scrollChatToBottom()
+    
+    // Also scroll after a short delay to ensure all content is loaded
+    // This is important because Turbo Stream updates might not be fully rendered yet
+    setTimeout(() => {
+      this.scrollChatToBottom()
+      console.debug("[ChatFormController] Scrolled to bottom after message submission")
+    }, 100)
+    
+    // And again after a longer delay to catch any delayed renders
+    setTimeout(() => {
+      this.scrollChatToBottom()
+    }, 500)
   }
   
   // Handle keyboard events (Enter to send, Shift+Enter for new line)
