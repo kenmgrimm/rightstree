@@ -9,13 +9,32 @@
 # - Facilitating AI chat interactions through PatentService
 
 class PatentApplicationsController < ApplicationController
-  before_action :set_patent_application, only: [ :show, :edit, :update, :ai_chat ]
+  before_action :set_patent_application, only: [ :show, :edit, :update, :mark_complete, :publish, :chat ]
 
   # GET /patent_applications/new
   # Renders the form for a new patent application
   def new
     Rails.logger.debug("[PatentApplicationsController#new] Initializing new patent application form")
     @patent_application = PatentApplication.new
+  end
+
+  # GET /patent_applications/create_stub
+  # Creates a stub patent application and redirects to the edit page
+  # This ensures we're always working with a persisted record
+  def create_stub
+    Rails.logger.debug("[PatentApplicationsController#create_stub] Creating stub patent application")
+
+    @patent_application = PatentApplication.create
+
+    if @patent_application.persisted?
+      Rails.logger.debug("[PatentApplicationsController#create_stub] Created stub patent application: #{@patent_application.id}")
+      # Redirect to edit path to ensure consistent user experience
+      redirect_to edit_patent_application_path(@patent_application)
+    else
+      Rails.logger.error("[PatentApplicationsController#create_stub] Failed to create patent application: #{@patent_application.errors.full_messages.join(', ')}")
+      # Fallback to the home page with an error message
+      redirect_to root_path, alert: "Unable to create a new patent application. Please try again."
+    end
   end
 
   # POST /patent_applications
@@ -99,20 +118,37 @@ class PatentApplicationsController < ApplicationController
     end
   end
 
-  # POST /patent_applications/:id/ai_chat
-  # Processes a chat message for a saved patent application and returns the AI response using Turbo Streams
-  def ai_chat
-    Rails.logger.debug("[PatentApplicationsController#ai_chat] Processing AI chat for patent application: #{@patent_application.id}")
-
-    # Get the user's message from the form
+  # POST /patent_applications/:id/chat
+  # Processes a chat message for an existing patent application and returns the AI response using Turbo Streams
+  def chat
+    # Get the user's message and optional problem/solution from the form
     user_message = params[:message]
-    Rails.logger.debug("[PatentApplicationsController#ai_chat] User message: #{user_message}")
+    problem = params[:problem].presence
+    solution = params[:solution].presence
+
+    Rails.logger.debug("[PatentApplicationsController#chat] Processing chat message for patent application #{params[:id]}: #{user_message}")
+
+    # Find the patent application - it must exist since this is a member route
+    @patent_application = PatentApplication.find(params[:id])
+    Rails.logger.debug("[PatentApplicationsController#chat] Using patent application: #{@patent_application.id}")
+
+    # Update problem/solution if provided but not already set
+    if problem.present? && @patent_application.problem.blank?
+      @patent_application.update(problem: problem)
+      Rails.logger.debug("[PatentApplicationsController#chat] Updated problem field")
+    end
+
+    if solution.present? && @patent_application.solution.blank?
+      @patent_application.update(solution: solution)
+      Rails.logger.debug("[PatentApplicationsController#chat] Updated solution field")
+    end
 
     # Initialize chat history if it doesn't exist
     @patent_application.chat_history ||= []
 
-    # Add user message to chat history
-    @patent_application.chat_history << { role: "user", content: user_message, timestamp: Time.current.to_i }
+    # Add user message to chat history with timestamp
+    timestamp = Time.current.to_i
+    @patent_application.chat_history << { role: "user", content: user_message, timestamp: timestamp }
 
     # Process with PatentService
     result = PatentService.guide_problem_solution(
@@ -124,78 +160,12 @@ class PatentApplicationsController < ApplicationController
       update_solution: false
     )
 
+    Rails.logger.debug("### result")
+    pp result
+
     # Update chat history with AI response
     @patent_application.chat_history = result[:messages]
     @patent_application.save
-
-    # Extract AI suggestions
-    problem, solution, chat = PatentService.extract_problem_solution_from_history(@patent_application.chat_history)
-
-    Rails.logger.debug("[PatentApplicationsController#ai_chat] AI response: #{chat}")
-    Rails.logger.debug("[PatentApplicationsController#ai_chat] AI suggested problem: #{problem}")
-    Rails.logger.debug("[PatentApplicationsController#ai_chat] AI suggested solution: #{solution}")
-
-    respond_to do |format|
-      format.turbo_stream {
-        render turbo_stream: [
-          turbo_stream.append(
-            "chat_messages",
-            partial: "patent_applications/message",
-            locals: { message: { role: "assistant", content: chat } }
-          ),
-          turbo_stream.replace(
-            "chat_form",
-            partial: "patent_applications/chat_form",
-            locals: { patent_application: @patent_application }
-          ),
-          turbo_stream.replace(
-            "ai_suggestions",
-            partial: "patent_applications/ai_suggestions",
-            locals: {
-              patent_application: @patent_application,
-              suggested_problem: problem,
-              suggested_solution: solution
-            }
-          )
-        ]
-      }
-    end
-  end
-
-  # POST /patent_applications/chat
-  # Processes a chat message for an unsaved patent application and returns the AI response using Turbo Streams
-  def chat
-    Rails.logger.debug("[PatentApplicationsController#chat] Processing AI chat for unsaved patent application")
-
-    # Get the user's message and optional problem/solution from the form
-    user_message = params[:message]
-    problem = params[:problem].presence
-    solution = params[:solution].presence
-
-    Rails.logger.debug("[PatentApplicationsController#chat] User message: #{user_message}")
-    Rails.logger.debug("[PatentApplicationsController#chat] Current problem: #{problem || '(empty)'}")
-    Rails.logger.debug("[PatentApplicationsController#chat] Current solution: #{solution || '(empty)'}")
-
-    # Create a temporary patent application to hold the chat history
-    @patent_application = PatentApplication.new(problem: problem, solution: solution)
-
-    # Initialize chat history with the user's message
-    @patent_application.chat_history = [
-      { role: "user", content: user_message, timestamp: Time.current.to_i }
-    ]
-
-    # Process with PatentService
-    result = PatentService.guide_problem_solution(
-      messages: @patent_application.chat_history,
-      user_input: user_message,
-      current_problem: problem,
-      current_solution: solution,
-      update_problem: false,
-      update_solution: false
-    )
-
-    # Update chat history with AI response
-    @patent_application.chat_history = result[:messages]
 
     # Extract AI suggestions
     suggested_problem, suggested_solution, chat = PatentService.extract_problem_solution_from_history(@patent_application.chat_history)
@@ -206,13 +176,17 @@ class PatentApplicationsController < ApplicationController
 
     respond_to do |format|
       format.turbo_stream {
-        render turbo_stream: [
-          # Append both the user message and AI response to the chat
+        # Add the user message to the chat container
+        user_streams = [
           turbo_stream.append(
             "chat_messages",
             partial: "patent_applications/message",
-            locals: { message: { role: "user", content: user_message, timestamp: Time.current.to_i } }
-          ),
+            locals: { message: { role: "user", content: user_message, timestamp: timestamp } }
+          )
+        ]
+
+        # Then add the AI response to the chat container
+        ai_streams = [
           turbo_stream.append(
             "chat_messages",
             partial: "patent_applications/message",
@@ -224,19 +198,64 @@ class PatentApplicationsController < ApplicationController
             partial: "patent_applications/chat_form",
             locals: { patent_application: @patent_application }
           ),
-          # Update the AI suggestions panel
+          # Update the patent application ID in the form (for new applications)
           turbo_stream.replace(
-            "ai_suggestions",
-            partial: "patent_applications/ai_suggestions",
-            locals: {
-              patent_application: @patent_application,
-              suggested_problem: suggested_problem,
-              suggested_solution: suggested_solution
-            }
+            "patent_application_id",
+            partial: "patent_applications/patent_application_id",
+            locals: { patent_application: @patent_application }
           )
         ]
+
+        # Combine all streams
+        render turbo_stream: user_streams + ai_streams
       }
     end
+  end
+
+  # PATCH /patent_applications/:id/mark_complete
+  # Marks a patent application as complete, validating required fields
+  def mark_complete
+    Rails.logger.debug("[PatentApplicationsController#mark_complete] Marking patent application as complete: #{@patent_application.id}")
+
+    if @patent_application.problem.blank? || @patent_application.solution.blank?
+      Rails.logger.debug("[PatentApplicationsController#mark_complete] Cannot mark as complete - missing required fields")
+      flash[:alert] = "Cannot mark as complete. Please ensure both problem and solution are provided."
+      redirect_to edit_patent_application_path(@patent_application)
+      return
+    end
+
+    if @patent_application.mark_as_complete
+      Rails.logger.debug("[PatentApplicationsController#mark_complete] Successfully marked as complete")
+      flash[:notice] = "Patent application marked as complete and ready for publishing."
+    else
+      Rails.logger.debug("[PatentApplicationsController#mark_complete] Failed to mark as complete: #{@patent_application.errors.full_messages}")
+      flash[:alert] = "Could not mark as complete: #{@patent_application.errors.full_messages.join(', ')}"
+    end
+
+    redirect_to patent_application_path(@patent_application)
+  end
+
+  # PATCH /patent_applications/:id/publish
+  # Publishes a complete patent application
+  def publish
+    Rails.logger.debug("[PatentApplicationsController#publish] Publishing patent application: #{@patent_application.id}")
+
+    unless @patent_application.complete?
+      Rails.logger.debug("[PatentApplicationsController#publish] Cannot publish - not marked as complete")
+      flash[:alert] = "Patent application must be marked as complete before publishing."
+      redirect_to patent_application_path(@patent_application)
+      return
+    end
+
+    if @patent_application.publish
+      Rails.logger.debug("[PatentApplicationsController#publish] Successfully published")
+      flash[:notice] = "Patent application has been published successfully."
+    else
+      Rails.logger.debug("[PatentApplicationsController#publish] Failed to publish: #{@patent_application.errors.full_messages}")
+      flash[:alert] = "Could not publish: #{@patent_application.errors.full_messages.join(', ')}"
+    end
+
+    redirect_to patent_application_path(@patent_application)
   end
 
   private
@@ -252,6 +271,6 @@ class PatentApplicationsController < ApplicationController
 
   # Permits the allowed parameters for creating/updating a patent application
   def patent_application_params
-    params.require(:patent_application).permit(:problem, :solution)
+    params.require(:patent_application).permit(:problem, :solution, :status)
   end
 end

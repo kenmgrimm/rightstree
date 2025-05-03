@@ -10,17 +10,19 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_04_27_152500) do
+ActiveRecord::Schema[8.0].define(version: 2025_05_03_162449) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "patent_applications", force: :cascade do |t|
-    t.text "problem", null: false
-    t.text "solution", null: false
+    t.text "problem"
+    t.text "solution"
     t.jsonb "chat_history", default: []
     t.integer "user_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "status", default: "draft"
+    t.index ["status"], name: "index_patent_applications_on_status"
     t.index ["user_id"], name: "index_patent_applications_on_user_id"
   end
 end

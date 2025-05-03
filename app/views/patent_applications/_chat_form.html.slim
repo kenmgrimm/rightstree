@@ -12,10 +12,15 @@
 / - Keyboard shortcuts (Enter to send)
 
 / Chat form is always available, whether patent application is saved or not
-= form_with url: patent_application.persisted? ? ai_chat_patent_application_path(patent_application) : "/patent_applications/chat", 
+= form_with url: patent_application.persisted? ? chat_patent_application_path(patent_application) : "", 
             method: :post,
             class: "chat-form-container w-100",
+            id: "chat_form",
             data: { controller: "chat-form", action: "turbo:submit-start->chat-form#handleSubmitStart turbo:submit-end->chat-form#handleSubmitEnd" } do |form|
+  
+  / Include the patent application ID if it exists
+  #patent_application_id
+    = render "patent_applications/patent_application_id", patent_application: patent_application
   
   / Grok-style input area with subtle shadow and pill shape - mobile-first responsive design
   .chat-input-wrapper.position-relative.rounded-pill.shadow-sm.bg-white.border.d-flex.align-items-center style="transition: box-shadow 0.2s ease;"
@@ -53,11 +58,11 @@
       .row
         .col-6
           strong Status: 
-          span.badge.bg-info.text-white = patent_application.persisted? ? "Saved ##{patent_application.id}" : "Unsaved"
+          span.badge.bg-info.text-white = patent_application.persisted? ? "Saved ##{patent_application.id}" : "New (will be saved)"
         .col-6
           strong Messages: 
           span.badge.bg-secondary.text-white = patent_application.chat_history&.size || 0
       .row.mt-1
         .col-12
           strong Action: 
-          code.small = patent_application.persisted? ? ai_chat_patent_application_path(patent_application) : "/patent_applications/chat"
+          code.small = "/patent_applications/chat"

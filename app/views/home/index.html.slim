@@ -1,0 +1,64 @@
+/ app/views/home/index.html.slim
+/
+/ Home page with options to create a new patent application
+/ Follows mobile-first design principles with responsive layout
+
+.container.py-5
+  .row.justify-content-center
+    .col-12.col-md-10.col-lg-8.text-center
+      h1.display-4.mb-4 RightsTree
+      p.lead.mb-5 AI-powered patent application assistance
+      
+      .card.shadow-sm.mb-5
+        .card-body.p-4.p-md-5
+          h2.card-title.mb-4 Welcome to RightsTree
+          p.card-text.mb-4
+            | Our AI-powered platform helps inventors document their ideas and prepare for patent applications.
+            | Get started by creating a new patent application below.
+          
+          = link_to create_stub_patent_applications_path, class: "btn btn-primary btn-lg" do
+            i.bi.bi-plus-circle.me-2
+            | Create New Patent Application
+            
+  .row.justify-content-center.mt-4
+    .col-12.col-md-10.col-lg-8
+      .card.shadow-sm.mb-4
+        .card-body.p-4
+          h3.card-title.mb-3 How It Works
+          
+          .row.g-4
+            .col-12.col-md-4.text-center
+              .p-3
+                i.bi.bi-lightbulb.display-4.text-primary.mb-3
+                h4 Document Your Idea
+                p Describe your problem and solution in detail
+            
+            .col-12.col-md-4.text-center
+              .p-3
+                i.bi.bi-chat-dots.display-4.text-primary.mb-3
+                h4 Chat with AI
+                p Get guidance and feedback from our AI assistant
+            
+            .col-12.col-md-4.text-center
+              .p-3
+                i.bi.bi-file-earmark-text.display-4.text-primary.mb-3
+                h4 Export Your Work
+                p Save your work for patent filing preparation
+                
+      .card.shadow-sm
+        .card-body.p-4
+          h3.card-title.mb-3 Why Use RightsTree?
+          
+          ul.list-group.list-group-flush
+            li.list-group-item.border-0.ps-0
+              i.bi.bi-check-circle-fill.text-success.me-2
+              | Structured approach to documenting inventions
+            li.list-group-item.border-0.ps-0
+              i.bi.bi-check-circle-fill.text-success.me-2
+              | AI guidance to help refine your ideas
+            li.list-group-item.border-0.ps-0
+              i.bi.bi-check-circle-fill.text-success.me-2
+              | Secure storage of your intellectual property
+            li.list-group-item.border-0.ps-0
+              i.bi.bi-check-circle-fill.text-success.me-2
+              | Mobile-friendly interface for working on the go

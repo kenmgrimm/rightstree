@@ -1,0 +1,3 @@
+/ Hidden field to store the patent application ID
+- if patent_application.persisted?
+  = hidden_field_tag :id, patent_application.id, id: "patent_application_id"

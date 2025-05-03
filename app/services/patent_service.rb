@@ -135,43 +135,45 @@ class PatentService
     return [ nil, nil, nil ] unless last_assistant && last_assistant[:content]
     text = last_assistant[:content]
 
-    # Log AI response in a human-readable way
+    # First, try to extract the chat content directly from the raw response
+    # This is useful if the AI didn't format the response as JSON
+    raw_chat = text.gsub(/```json.*?```/m, "").strip
+
+    # Then try to extract the JSON block if it exists
     json_block = text[/```json\s*(\{.*?\})\s*```/m, 1]
+    problem = nil
+    solution = nil
+    chat = nil
+
     if json_block
       begin
         parsed = JSON.parse(json_block)
         problem = parsed["problem"]
         solution = parsed["solution"]
         chat = parsed["chat"]
+
+        # Log the extracted values
         Rails.logger.debug("[AI.chat] #{chat.inspect}")
         Rails.logger.debug("[AI.problem] #{problem.inspect}")
         Rails.logger.debug("[AI.solution] #{solution.inspect}")
-      rescue JSON::ParserError
-        Rails.logger.warn("[AI] Invalid JSON in response: #{text}")
+
+        # Return the extracted values if they're all present
+        [ problem, solution, chat ]
+      rescue JSON::ParserError => e
+        Rails.logger.warn("AI response JSON parse error: #{e.message}")
       end
     else
       Rails.logger.warn("[AI] Missing JSON code block in response: #{text}")
     end
 
-    # Only accept a valid JSON code block with all required fields
-    json_block = text[/```json\s*(\{.*?\})\s*```/m, 1]
-    if json_block
-      begin
-        obj = JSON.parse(json_block)
-        problem = obj["problem"]&.strip
-        solution = obj["solution"]&.strip
-        chat = obj["chat"]&.strip
-        if problem && solution && chat
-          return [ problem, solution, chat ]
-        else
-          Rails.logger.warn("AI response missing required fields: #{obj.inspect}")
-        end
-      rescue JSON::ParserError => e
-        Rails.logger.warn("AI response JSON parse error: #{e.message}")
-      end
-    else
-      Rails.logger.warn("AI response missing JSON code block: #{text.inspect}")
+    # If we couldn't extract from JSON or some fields were missing,
+    # use the raw text as the chat content
+    if raw_chat.present?
+      Rails.logger.debug("[AI] Using raw text as chat content: #{raw_chat}")
+      return [ nil, nil, raw_chat ]
     end
-    [ nil, nil, nil ]
+
+    # If all else fails, use the entire response
+    [ nil, nil, text ]
   end
 end

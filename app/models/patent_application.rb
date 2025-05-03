@@ -11,9 +11,21 @@
 # - created_at, updated_at: timestamps
 
 class PatentApplication < ApplicationRecord
-  # Validations
-  validates :problem, presence: true, allow_blank: false
-  validates :solution, presence: true, allow_blank: false
+  # Define possible statuses
+  STATUSES = {
+    draft: "draft",           # Initial status, minimal validation
+    complete: "complete",     # All required fields filled, ready for review
+    published: "published"    # Finalized and published
+  }
+
+  # Set default status to draft
+  attribute :status, :string, default: STATUSES[:draft]
+
+  # Conditional validations based on status
+  with_options if: :publishing_or_published? do
+    validates :problem, presence: true
+    validates :solution, presence: true
+  end
 
   # Ensure chat_history is always an array of messages
   before_validation :ensure_chat_history_structure
@@ -41,6 +53,36 @@ class PatentApplication < ApplicationRecord
   def ensure_chat_history_structure
     self.chat_history ||= []
     Rails.logger.debug("[PatentApplication] Ensuring chat_history structure: #{chat_history.inspect}")
+  end
+
+  # Status management methods
+  def draft?
+    status == STATUSES[:draft]
+  end
+
+  def complete?
+    status == STATUSES[:complete]
+  end
+
+  def published?
+    status == STATUSES[:published]
+  end
+
+  def publishing_or_published?
+    status.to_s == STATUSES[:complete] || status.to_s == STATUSES[:published]
+  end
+
+  def mark_as_complete
+    update(status: STATUSES[:complete])
+  end
+
+  def publish
+    if valid?
+      update(status: STATUSES[:published])
+    else
+      errors.add(:base, "Cannot publish incomplete application")
+      false
+    end
   end
 
   # Debug logging methods
