@@ -14,9 +14,10 @@
     div
       h1 My Patents
       p.fst-italic.text-primary.small Where Ideas Take Root
-    = link_to new_patent_application_path, class: "btn btn-primary" do
+    = link_to create_stub_patent_applications_path, class: "btn btn-primary" do
       i.bi.bi-plus-circle.me-1
       | New Patent Application
+    - logger.debug "[Route Debug] Updated index page header 'New Patent Application' button to use create_stub_patent_applications_path"
   
   / Debug logging
   - Rails.logger.debug("[Index View] Rendering patent applications: #{@patent_applications.size} total") if Rails.env.development?
@@ -27,9 +28,10 @@
       i.bi.bi-folder2-open.display-1.text-muted.mb-3
       h3.text-muted No Patent Applications Yet
       p.text-muted.mb-4 Start by creating your first patent application.
-      = link_to new_patent_application_path, class: "btn btn-primary" do
+      = link_to create_stub_patent_applications_path, class: "btn btn-primary" do
         i.bi.bi-plus-circle.me-1
         | Create Patent Application
+      - logger.debug "[Route Debug] Updated empty state 'Create Patent Application' button to use create_stub_patent_applications_path"
   
   / Draft applications
   - if @draft_applications.present?

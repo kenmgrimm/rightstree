@@ -30,7 +30,8 @@
         
         .actions.mb-4
           = link_to "Edit Application", edit_patent_application_path(@patent_application), class: "btn btn-primary"
-          = link_to "New Application", new_patent_application_path, class: "btn btn-outline-secondary"
+          = link_to "New Application", create_stub_patent_applications_path, class: "btn btn-outline-secondary"
+          - logger.debug "[Route Debug] Updated show page 'New Application' button to use create_stub_patent_applications_path"
     
     .col-md-5
       / AI Chat interface - same as in new/edit views

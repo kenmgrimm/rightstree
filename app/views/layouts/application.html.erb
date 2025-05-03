@@ -194,10 +194,11 @@
             
             <!-- Create/Add Patent Application -->
             <li class="nav-item">
-              <a class="nav-link <%= current_page?(new_patent_application_path) ? 'active fw-medium' : '' %>" 
-                 href="<%= new_patent_application_path %>">
+              <a class="nav-link <%= current_page?(create_stub_patent_applications_path) ? 'active fw-medium' : '' %>" 
+                 href="<%= create_stub_patent_applications_path %>">
                 <i class="bi bi-plus-circle me-1"></i> Create Patent
               </a>
+              <% logger.debug "[Route Debug] Updated navigation 'Create Patent' link to use create_stub_patent_applications_path" %>
             </li>
             
             <!-- Patent Marketplace -->

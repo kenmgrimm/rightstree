@@ -28,4 +28,5 @@ div[id=dom_id(patent_application)]
   
   .actions.mb-4
     = link_to "Edit Application", edit_patent_application_path(patent_application), class: "btn btn-primary"
-    = link_to "New Application", new_patent_application_path, class: "btn btn-outline-secondary ms-2"
+    = link_to "New Application", create_stub_patent_applications_path, class: "btn btn-outline-secondary ms-2"
+    - logger.debug "[Route Debug] Updated patent application partial 'New Application' button to use create_stub_patent_applications_path"
