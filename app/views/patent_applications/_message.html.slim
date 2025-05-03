@@ -6,22 +6,106 @@
 / - Modern, clean design with subtle gradients for AI avatar
 / - Clear visual distinction between user and AI messages
 / - Timestamp display
-/ - Comprehensive debug logging
+/ - Handles system messages (not displayed)
+/ - Properly extracts content from JSON responses
 
 - message_id = "message_#{SecureRandom.hex(8)}"
-- is_user = message[:role] == 'user'
-- timestamp = message[:timestamp] ? Time.at(message[:timestamp]).strftime("%H:%M") : Time.current.strftime("%H:%M")
 
-/ Process content to extract chat message from JSON if needed
-- content = message[:content]
-- if !is_user && content.present? && content.include?('```json')
+/ Handle the standardized message format
+- role = message['role'] || message[:role]
+- msg_timestamp = message['timestamp'] || message[:timestamp]
+
+- is_user = role == 'user'
+- is_system = role == 'system'
+- timestamp = msg_timestamp ? Time.at(msg_timestamp.to_i).strftime("%H:%M") : Time.current.strftime("%H:%M")
+
+/ Debug the message
+- Rails.logger.debug("[Message Partial] Processing message: role=#{role}, timestamp=#{timestamp}") if Rails.env.development?
+
+/ Skip system messages entirely
+- return if is_system
+
+/ Get the appropriate content based on role
+- if role == 'assistant'
+  / For assistant messages, get content from the content hash
+  - content_hash = message['content'] || message[:content] || {}
+  - content_hash = content_hash.is_a?(Hash) ? content_hash : {}
+  - message_text = content_hash['message'] || content_hash[:message] || ""
+  - suggested_problem = content_hash['problem'] || content_hash[:problem] || ""
+  - suggested_solution = content_hash['solution'] || content_hash[:solution] || ""
+  - Rails.logger.debug("[Message Partial] Assistant message: '#{message_text[0..50]}...', problem: #{suggested_problem.present?}, solution: #{suggested_solution.present?}") if Rails.env.development?
+- else
+  / For user and other messages, get content from the message field
+  - message_text = message['message'] || message[:message] || message['content'] || message[:content] || ""
+  - suggested_problem = nil
+  - suggested_solution = nil
+  - Rails.logger.debug("[Message Partial] User/other message: '#{message_text[0..50]}...'") if Rails.env.development?
+
+/ Skip empty messages
+- if message_text.blank?
+  - Rails.logger.debug("[Message Partial] Skipping empty message: #{message.inspect}") if Rails.env.development?
+  - return
+
+/ Debug logging
+- Rails.logger.debug("[Message Partial] Processing message: role=#{message[:role]}, content=#{message_text[0..50]}...") if Rails.env.development?
+
+/ Additional debug logging for message content
+- Rails.logger.debug("[Message Partial] Message content type: #{message_text.class}") if Rails.env.development?
+- Rails.logger.debug("[Message Partial] Message content: #{message_text.inspect}") if Rails.env.development?
+
+/ Handle hash content that might be displayed as a string
+- if message_text.is_a?(String) && message_text.include?("=>") && (message_text.include?("message") || message_text.include?("problem") || message_text.include?("solution"))
   - begin
-    - json_block = content[/```json\s*(\{.*?\})\s*```/m, 1]
-    - if json_block.present?
-      - parsed = JSON.parse(json_block)
-      - content = parsed["chat"] if parsed["chat"].present?
+    - if message_text.include?("{")
+      / Try to convert Ruby hash string to actual hash
+      - hash_str = message_text.gsub("=>\n", "=>").gsub("=>\r", "=>").gsub("=>  ", "=>")
+      - hash_str = hash_str.gsub("=>\n", "=>").gsub("=>\r", "=>").gsub("=>  ", "=>")
+      - eval_result = eval(hash_str) rescue nil
+      
+      - if eval_result.is_a?(Hash)
+        - Rails.logger.debug("[Message Partial] Converted string to hash: #{eval_result.inspect}") if Rails.env.development?
+        - if eval_result["message"].present? || eval_result[:message].present?
+          - message_text = eval_result["message"] || eval_result[:message]
+        - if eval_result["problem"].present? || eval_result[:problem].present?
+          - suggested_problem = eval_result["problem"] || eval_result[:problem]
+        - if eval_result["solution"].present? || eval_result[:solution].present?
+          - suggested_solution = eval_result["solution"] || eval_result[:solution]
   - rescue => e
-    - Rails.logger.error("[Message Partial] Error parsing JSON: #{e.message}") if Rails.env.development?
+    - Rails.logger.error("[Message Partial] Hash parsing error: #{e.message}") if Rails.env.development?
+
+/ Additional parsing for messages that might contain JSON
+- if !is_user && message_text.is_a?(String) && message_text.include?('{')
+  - begin
+    / Try to parse as JSON if it looks like JSON
+    - if message_text.strip.start_with?('{')
+      - begin
+        - parsed = JSON.parse(message_text)
+        - if parsed["message"].present? || parsed["chat"].present?
+          - message_text = parsed["message"] || parsed["chat"]
+        - if parsed["problem"].present? && parsed["problem"] != ""
+          - suggested_problem = parsed["problem"]
+        - if parsed["solution"].present? && parsed["solution"] != ""
+          - suggested_solution = parsed["solution"]
+        - Rails.logger.debug("[Message Partial] Parsed JSON: message=#{message_text[0..30]}...") if Rails.env.development?
+      - rescue => e
+        - Rails.logger.error("[Message Partial] JSON parse error: #{e.message}") if Rails.env.development?
+    / Extract JSON from code blocks if present
+    - elsif message_text.include?('```json')
+      - json_match = message_text.match(/```json\s*(.+?)\s*```/m)
+      - if json_match && json_match[1].present?
+        - json_text = json_match[1].strip
+        - parsed = JSON.parse(json_text)
+        - if parsed["message"].present? || parsed["chat"].present?
+          - message_text = parsed["message"] || parsed["chat"]
+        - if parsed["problem"].present? && parsed["problem"] != ""
+          - suggested_problem = parsed["problem"]
+        - if parsed["solution"].present? && parsed["solution"] != ""
+          - suggested_solution = parsed["solution"]
+        - Rails.logger.debug("[Message Partial] Extracted JSON from code block: message=#{message_text[0..30]}...") if Rails.env.development?
+  - rescue => e
+    / If all parsing fails, clean up the message
+    - Rails.logger.error("[Message Partial] JSON processing error: #{e.message}") if Rails.env.development?
+    - message_text = message_text.gsub(/```json|```/m, "").strip
 
 .message.mb-4.d-flex class="#{is_user ? 'user-message justify-content-end' : 'ai-message'}" id=message_id data-timestamp=timestamp
   / For AI messages, show avatar on the left
@@ -34,7 +118,56 @@
   .message-content.p-3.rounded-3.shadow-sm class="#{is_user ? 'text-white' : ''}" style="max-width: 85%; #{is_user ? 'background-color: var(--primary-color);' : 'background-color: var(--surface-color);'}"
     .message-body
       p.mb-1 style="#{is_user ? 'color: white;' : 'color: var(--text-primary);'}"
-        = content
+        / Inspect the message content for debugging
+        - Rails.logger.debug("[Message Partial] Final message_text to display: #{message_text.inspect}") if Rails.env.development?
+        
+        / Handle different types of message content
+        - if message_text.is_a?(Hash)
+          / If it's a hash, extract the message field
+          = simple_format(message_text["message"] || message_text[:message] || message_text.inspect)
+        - elsif message_text.is_a?(String) && message_text.include?("{\"message\"")
+          / If it's a JSON string, try to parse it
+          - begin
+            - parsed = JSON.parse(message_text)
+            = simple_format(parsed["message"] || parsed["chat"] || message_text)
+          - rescue
+            = simple_format(message_text)
+        - elsif message_text.is_a?(String) && message_text.include?("{\"message\"=>")
+          / If it's a Ruby hash string, try to extract just the message value using regex
+          - message_match = message_text.match(/"message"\s*=>\s*"([^"]+)"/) || message_text.match(/"chat"\s*=>\s*"([^"]+)"/) 
+          - if message_match && message_match[1].present?
+            = simple_format(message_match[1])
+          - else
+            = simple_format(message_text)
+        - else
+          / Otherwise, just display the message text as is
+          = simple_format(message_text)
+      
+      / Display suggestion buttons if problem or solution is suggested
+      - if !is_user && (suggested_problem.present? || suggested_solution.present?)
+        .suggestions.mt-3.border-top.pt-2
+          - if suggested_problem.present?
+            .suggested-problem.mb-2
+              p.small.text-muted.mb-1 Suggested problem statement:
+              p.small.fst-italic.mb-2 = suggested_problem
+              - patent_app_id = message[:patent_application_id] || message['patent_application_id'] || @patent_application&.id
+              - if patent_app_id.present?
+                = button_to "Use this problem statement", 
+                          update_problem_patent_application_path(patent_app_id), 
+                          method: :patch, 
+                          params: { problem: suggested_problem },
+                          class: "btn btn-sm btn-outline-primary btn-use-suggestion",
+                          form: { data: { turbo: true } }
+              - else
+                p.small.text-muted Cannot apply suggestion (missing application ID)
+          
+          - if suggested_solution.present?
+            .suggested-solution.mt-3
+              p.small.text-muted.mb-1 Suggested solution outline:
+              p.small.fst-italic.mb-2 = suggested_solution
+              .alert.alert-info.small.py-2.px-3.mb-2
+                i.bi.bi-info-circle.me-1
+                | Remember: The solution must be described by you, not the AI.
     .message-footer.d-flex.justify-content-between.align-items-center.mt-2
       small.opacity-75 style="#{is_user ? 'color: rgba(255,255,255,0.8);' : 'color: var(--text-muted);'}"
         = timestamp

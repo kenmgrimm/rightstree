@@ -38,7 +38,11 @@ class PatentService
       messages << { role: "system", content: "Do not propose or extrapolate a solution until the user provides one. Only prompt the user to describe their own solution." }
     end
     messages << { role: "user", content: user_input }
-    Rails.logger.debug("[PatentService] Conversation so far: #{messages.inspect}")
+    
+    # Standardize the messages for OpenAI API
+    standardized_messages = standardize_messages_for_openai(messages)
+    
+    Rails.logger.debug("[PatentService] Conversation so far: #{standardized_messages.inspect}")
 
     # Check for off-topic requests (basic heuristic)
     if off_topic?(user_input)
@@ -57,7 +61,7 @@ class PatentService
     end
 
     # Send to OpenAI
-    response = OpenaiService.new.chat(messages, temperature: 0.6, max_tokens: 500)
+    response = OpenaiService.new.chat(standardized_messages, temperature: 0.6, max_tokens: 500)
     Rails.logger.debug("[PatentService] OpenAI response: #{response.inspect}")
     ai_message = response.dig("choices", 0, "message", "content")
     messages << { role: "assistant", content: ai_message }
@@ -102,13 +106,11 @@ class PatentService
 
       Important:
       - At the end of every message, output your response as a JSON object in a single code block, like this:
-      ```json
       {
         "problem": "A concise problem statement here.",
         "solution": "A concise solution statement here.",
-        "chat": "Conversational text, clarifications, or next questions for the user."
+        "message": "Conversational text, clarifications, or next questions for the user."
       }
-      ```
       - Always include all three fields: "problem", "solution", and "chat" in your JSON response, even if one is empty. If a value is unknown or not yet provided, use an empty string (""). Never omit a field or use null.
       - Only include this code block in your response. Do not include any other text outside the code block.
       - If you are not sure, ask the user for clarification before proposing a summary.
@@ -134,49 +136,86 @@ class PatentService
     last_assistant = messages.reverse.find { |m| m[:role] == "assistant" }
     return [ nil, nil, nil ] unless last_assistant && last_assistant[:content]
     text = last_assistant[:content]
-    
+
     Rails.logger.debug("[PatentService] Extracting from content: #{text[0..100]}...")
 
     # Check if the content looks like raw JSON (starts with ```json)
-    if text.strip.start_with?('```json')
+    if text.strip.start_with?("```json")
       # Extract the JSON block
       json_block = text[/```json\s*(\{.*?\})\s*```/m, 1]
-      
+
       if json_block
         begin
           Rails.logger.debug("[PatentService] Found JSON block: #{json_block}")
           parsed = JSON.parse(json_block)
           problem = parsed["problem"]
           solution = parsed["solution"]
-          chat = parsed["chat"]
-          
+          message = parsed["message"] || parsed["chat"] # Support both message and chat fields
+
           # Log the extracted values
-          Rails.logger.debug("[PatentService] Extracted chat: #{chat.inspect}")
+          Rails.logger.debug("[PatentService] Extracted message: #{message.inspect}")
           Rails.logger.debug("[PatentService] Extracted problem: #{problem.inspect}")
           Rails.logger.debug("[PatentService] Extracted solution: #{solution.inspect}")
-          
-          # Return the extracted chat content instead of the raw JSON
-          if chat.present?
-            return [ problem, solution, chat ]
+
+          # Return the extracted message content instead of the raw JSON
+          if message.present? || problem.present? || solution.present?
+            return [ problem, solution, message ]
           end
         rescue JSON::ParserError => e
           Rails.logger.warn("[PatentService] JSON parse error: #{e.message}")
         end
       end
     end
-    
+
     # If we couldn't extract from JSON or some fields were missing,
     # clean the text by removing JSON code blocks
     cleaned_text = text.gsub(/```json.*?```/m, "").strip
-    
+
     if cleaned_text.present?
       Rails.logger.debug("[PatentService] Using cleaned text: #{cleaned_text}")
       return [ nil, nil, cleaned_text ]
     end
-    
+
     # If all else fails, use the entire response but remove the code block markers
     cleaned_response = text.gsub(/```json|```/m, "").strip
     Rails.logger.debug("[PatentService] Using cleaned response: #{cleaned_response[0..100]}...")
     [ nil, nil, cleaned_response ]
+  end
+  
+  # Standardize messages for OpenAI API to ensure consistent format
+  # OpenAI API expects each message to have 'role' and 'content' keys
+  def self.standardize_messages_for_openai(messages)
+    Rails.logger.debug("[PatentService#standardize_messages_for_openai] Standardizing #{messages.size} messages")
+    
+    standardized = messages.map do |msg|
+      # Extract role - could be symbol or string key
+      role = msg[:role] || msg['role']
+      
+      # Extract content based on message format
+      if role == 'assistant' || role == :assistant
+        # For assistant messages, check if content is a hash with our standardized format
+        content_hash = msg[:content] || msg['content']
+        
+        if content_hash.is_a?(Hash) && (content_hash['message'] || content_hash[:message])
+          # If it's our standardized format, use the message field
+          content = content_hash['message'] || content_hash[:message]
+        else
+          # Otherwise use the content directly
+          content = content_hash
+        end
+      else
+        # For user/system messages, get content from message or content field
+        content = msg[:message] || msg['message'] || msg[:content] || msg['content']
+      end
+      
+      # Ensure content is a string
+      content = content.to_s
+      
+      # Create a standardized message with string keys as expected by OpenAI API
+      { "role" => role.to_s, "content" => content }
+    end
+    
+    Rails.logger.debug("[PatentService#standardize_messages_for_openai] Standardized messages: #{standardized.inspect}") if Rails.env.development?
+    standardized
   end
 end

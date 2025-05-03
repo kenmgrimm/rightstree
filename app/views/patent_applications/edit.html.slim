@@ -26,13 +26,42 @@
         / Chat messages will be displayed here - constrained height with scrolling
         #chat_messages.chat-messages
           / Display existing chat history
-          - if @patent_application.chat_history.present?
-            - @patent_application.chat_history.each do |message|
+          - if @patent_application.chat_history.present? && @patent_application.chat_history.size > 0
+            - Rails.logger.debug("[Edit View] Chat history size: #{@patent_application.chat_history.size}")
+            
+            / Get unique messages to avoid duplicates (without modifying the database)
+            - seen_contents = {}
+            - unique_messages = @patent_application.chat_history.reject do |msg|
+              - role = msg[:role] || msg['role']
+              - next true if role == 'system' # Skip system messages
+              
+              / Get content based on the message format
+              - if role == 'assistant'
+                - content_hash = msg[:content] || msg['content'] || {}
+                - content_hash = content_hash.is_a?(Hash) ? content_hash : {}
+                - message_text = content_hash[:message] || content_hash['message'] || ""
+                - content_key = "assistant:#{message_text}"
+              - else
+                - message_text = msg[:message] || msg['message'] || msg[:content] || msg['content'] || ""
+                - content_key = "#{role}:#{message_text}"
+              
+              - next true if message_text.blank? # Skip empty messages
+              - is_duplicate = seen_contents[content_key]
+              - seen_contents[content_key] = true
+              - is_duplicate
+            
+            / Render each unique message
+            - unique_messages.each do |message|
               = render "message", message: message
           - else
+              
             / Initial welcome message if no history
-            .message.ai-message
-              p Hello! I'm your AI assistant. I can help you refine your patent application's problem and solution statements. What would you like to improve?
+            .message.ai-message.mb-4
+              .avatar
+                .ai-avatar
+              .message-content
+                p.mb-2 Hello! I'm your AI assistant. I can help you refine your patent application's problem and solution statements.
+                p.mb-0 To get started, type a message below describing your patent idea or ask for help with your problem statement.
         
         / Chat form - fixed at bottom of container
         #chat_form.chat-form
