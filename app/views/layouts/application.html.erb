@@ -128,9 +128,118 @@
   </head>
 
   <body>
-    <%= yield %>
+    <!-- Main Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white border-bottom shadow-sm sticky-top">
+      <div class="container">
+        <!-- Brand/logo with tagline -->
+        <a class="navbar-brand d-flex align-items-center" href="/">
+          <img src="/icon.svg" alt="Rightstree Logo" width="30" height="30" class="me-2">
+          <div>
+            <span class="fw-bold d-block" style="color: var(--primary-color);">Rightstree</span>
+            <small class="text-muted d-none d-sm-inline-block" style="font-size: 0.75rem; letter-spacing: 0.5px;">Where Ideas Take Root</small>
+          </div>
+        </a>
+        
+        <!-- Mobile toggle button -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" 
+                aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        
+        <!-- Navigation links -->
+        <div class="collapse navbar-collapse" id="mainNavbar">
+          <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+            <!-- My Patents -->
+            <li class="nav-item">
+              <a class="nav-link <%= current_page?(patent_applications_path) ? 'active fw-medium' : '' %>" 
+                 href="<%= patent_applications_path %>">
+                <i class="bi bi-folder me-1"></i> My Patents
+              </a>
+            </li>
+            
+            <!-- Create/Add Patent Application -->
+            <li class="nav-item">
+              <a class="nav-link <%= current_page?(new_patent_application_path) ? 'active fw-medium' : '' %>" 
+                 href="<%= new_patent_application_path %>">
+                <i class="bi bi-plus-circle me-1"></i> Create Patent
+              </a>
+            </li>
+            
+            <!-- Patent Marketplace -->
+            <li class="nav-item">
+              <a class="nav-link <%= current_page?(marketplace_patent_applications_path) ? 'active fw-medium' : '' %>" 
+                 href="<%= marketplace_patent_applications_path %>">
+                <i class="bi bi-shop me-1"></i> Marketplace
+              </a>
+            </li>
+          </ul>
+          
+          <!-- Right-aligned items (user profile, etc.) -->
+          <div class="d-flex">
+            <div class="dropdown">
+              <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="userDropdown" 
+                      data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-person-circle me-1"></i>
+                <span class="d-none d-sm-inline">Account</span>
+              </button>
+              <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                <li><a class="dropdown-item" href="#"><i class="bi bi-gear me-2"></i>Settings</a></li>
+                <li><a class="dropdown-item" href="#"><i class="bi bi-question-circle me-2"></i>Help</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="#"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</a></li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <div class="container py-4">
+      <% if flash[:notice].present? %>
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          <%= flash[:notice] %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      <% end %>
+      
+      <% if flash[:alert].present? %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          <%= flash[:alert] %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      <% end %>
+      
+      <%= yield %>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-white border-top mt-auto py-4">
+      <div class="container">
+        <div class="row">
+          <div class="col-md-6 mb-3 mb-md-0">
+            <p class="mb-0 text-muted">
+              &copy; <%= Time.current.year %> Rightstree. All rights reserved.
+              <span class="d-block d-md-inline ms-md-2 fst-italic">Where Ideas Take Root</span>
+            </p>
+          </div>
+          <div class="col-md-6 text-md-end">
+            <a href="#" class="text-muted me-3">Terms</a>
+            <a href="#" class="text-muted me-3">Privacy</a>
+            <a href="#" class="text-muted">Contact</a>
+          </div>
+        </div>
+      </div>
+    </footer>
     
     <%# Bootstrap JavaScript Bundle with Popper for interactive components %>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+    
+    <%# Debug logging for development environment %>
+    <% if Rails.env.development? %>
+      <script>
+        console.debug("[Layout] Page loaded at: <%= Time.current.strftime("%Y-%m-%d %H:%M:%S") %>");
+      </script>
+    <% end %>
   </body>
 </html>

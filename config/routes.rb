@@ -11,10 +11,13 @@ Rails.application.routes.draw do
 
   # Patent Application routes
   # These routes handle the patent application web form with AI chat integration
-  resources :patent_applications, only: [ :new, :create, :show, :edit, :update ] do
+  resources :patent_applications, only: [ :index, :new, :create, :show, :edit, :update ] do
     collection do
       # Route for creating a stub patent application and redirecting to edit
       get :create_stub
+      
+      # Route for the patent marketplace (published patents)
+      get :marketplace
     end
 
     member do

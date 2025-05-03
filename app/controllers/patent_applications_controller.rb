@@ -11,6 +11,39 @@
 class PatentApplicationsController < ApplicationController
   before_action :set_patent_application, only: [ :show, :edit, :update, :mark_complete, :publish, :chat, :update_problem, :update_solution ]
 
+  # GET /patent_applications
+  # Lists all patent applications owned by the current user
+  def index
+    Rails.logger.debug("[PatentApplicationsController#index] Listing all patent applications")
+    
+    # Get all patent applications (would be scoped to current_user in a real app)
+    @patent_applications = PatentApplication.all.order(updated_at: :desc)
+    
+    # Group applications by status for easier display
+    @draft_applications = @patent_applications.select(&:draft?)
+    @complete_applications = @patent_applications.select(&:complete?)
+    @published_applications = @patent_applications.select(&:published?)
+    
+    Rails.logger.debug("[PatentApplicationsController#index] Found #{@patent_applications.size} applications: " +
+                      "#{@draft_applications.size} drafts, " +
+                      "#{@complete_applications.size} complete, " +
+                      "#{@published_applications.size} published")
+  end
+  
+  # GET /patent_applications/marketplace
+  # Displays published patent applications available for browsing/bidding/purchasing
+  def marketplace
+    Rails.logger.debug("[PatentApplicationsController#marketplace] Showing patent marketplace")
+    
+    # Only show published applications in the marketplace
+    @marketplace_patents = PatentApplication.where(status: 'published').order(updated_at: :desc)
+    
+    # In a real app, we might have additional filtering options here
+    # such as by category, price range, etc.
+    
+    Rails.logger.debug("[PatentApplicationsController#marketplace] Found #{@marketplace_patents.size} published patents")
+  end
+
   # GET /patent_applications/new
   # Renders the form for a new patent application
   def new
