@@ -23,6 +23,9 @@ Rails.application.routes.draw do
 
       # Route for updating problem statement from AI suggestions
       patch :update_problem
+      
+      # Route for updating solution from AI suggestions
+      patch :update_solution
 
       # Route for marking an application as complete (ready for publishing)
       patch :mark_complete

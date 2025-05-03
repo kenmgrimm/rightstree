@@ -30,9 +30,19 @@
   / For assistant messages, get content from the content hash
   - content_hash = message['content'] || message[:content] || {}
   - content_hash = content_hash.is_a?(Hash) ? content_hash : {}
-  - message_text = content_hash['message'] || content_hash[:message] || ""
-  - suggested_problem = content_hash['problem'] || content_hash[:problem] || ""
-  - suggested_solution = content_hash['solution'] || content_hash[:solution] || ""
+  
+  / Handle nested message structure
+  - if content_hash['message'].is_a?(Hash)
+    - nested_message = content_hash['message']
+    - message_text = nested_message['message'] || ""
+    - suggested_problem = nested_message['problem'] || content_hash['problem'] || ""
+    - suggested_solution = nested_message['solution'] || content_hash['solution'] || ""
+    - Rails.logger.debug("[Message Partial] Found nested message structure") if Rails.env.development?
+  - else
+    - message_text = content_hash['message'] || content_hash[:message] || ""
+    - suggested_problem = content_hash['problem'] || content_hash[:problem] || ""
+    - suggested_solution = content_hash['solution'] || content_hash[:solution] || ""
+  
   - Rails.logger.debug("[Message Partial] Assistant message: '#{message_text[0..50]}...', problem: #{suggested_problem.present?}, solution: #{suggested_solution.present?}") if Rails.env.development?
 - else
   / For user and other messages, get content from the message field
@@ -146,11 +156,16 @@
       / Display suggestion buttons if problem or solution is suggested
       - if !is_user && (suggested_problem.present? || suggested_solution.present?)
         .suggestions.mt-3.border-top.pt-2
-          - if suggested_problem.present?
+          / Only show problem suggestion if the problem field is empty
+          - patent_app_id = message[:patent_application_id] || message['patent_application_id'] || @patent_application&.id
+          - patent_application = PatentApplication.find_by(id: patent_app_id) if patent_app_id.present?
+          - problem_is_empty = patent_application.nil? || patent_application.problem.blank?
+          - solution_is_empty = patent_application.nil? || patent_application.solution.blank?
+          
+          - if suggested_problem.present? && problem_is_empty
             .suggested-problem.mb-2
               p.small.text-muted.mb-1 Suggested problem statement:
               p.small.fst-italic.mb-2 = suggested_problem
-              - patent_app_id = message[:patent_application_id] || message['patent_application_id'] || @patent_application&.id
               - if patent_app_id.present?
                 = button_to "Use this problem statement", 
                           update_problem_patent_application_path(patent_app_id), 
@@ -158,13 +173,24 @@
                           params: { problem: suggested_problem },
                           class: "btn btn-sm btn-outline-primary btn-use-suggestion",
                           form: { data: { turbo: true } }
+                - Rails.logger.debug("[Message Partial] Showing problem suggestion because problem is empty") if Rails.env.development?
               - else
                 p.small.text-muted Cannot apply suggestion (missing application ID)
           
-          - if suggested_solution.present?
+          - if suggested_solution.present? && solution_is_empty
             .suggested-solution.mt-3
               p.small.text-muted.mb-1 Suggested solution outline:
               p.small.fst-italic.mb-2 = suggested_solution
+              - if patent_app_id.present?
+                = button_to "Use this solution", 
+                          update_solution_patent_application_path(patent_app_id), 
+                          method: :patch, 
+                          params: { solution: suggested_solution },
+                          class: "btn btn-sm btn-outline-primary btn-use-suggestion mb-2",
+                          form: { data: { turbo: true } }
+                - Rails.logger.debug("[Message Partial] Showing solution suggestion because solution is empty") if Rails.env.development?
+              - else
+                p.small.text-muted Cannot apply suggestion (missing application ID)
               .alert.alert-info.small.py-2.px-3.mb-2
                 i.bi.bi-info-circle.me-1
                 | Remember: The solution must be described by you, not the AI.

@@ -9,7 +9,7 @@
 # - Facilitating AI chat interactions through PatentService
 
 class PatentApplicationsController < ApplicationController
-  before_action :set_patent_application, only: [ :show, :edit, :update, :mark_complete, :publish, :chat, :update_problem ]
+  before_action :set_patent_application, only: [ :show, :edit, :update, :mark_complete, :publish, :chat, :update_problem, :update_solution ]
 
   # GET /patent_applications/new
   # Renders the form for a new patent application
@@ -354,6 +354,22 @@ class PatentApplicationsController < ApplicationController
     else
       Rails.logger.debug("[PatentApplicationsController#update_problem] Failed to update problem: #{@patent_application.errors.full_messages.join(', ')}")
       flash[:alert] = "Failed to update problem: #{@patent_application.errors.full_messages.join(', ')}"
+    end
+
+    redirect_to edit_patent_application_path(@patent_application)
+  end
+  
+  # Updates the solution with an AI suggestion
+  def update_solution
+    Rails.logger.debug("[PatentApplicationsController#update_solution] Updating solution for patent application: #{@patent_application.id}")
+    Rails.logger.debug("[PatentApplicationsController#update_solution] New solution: #{params[:solution]}")
+
+    if @patent_application.update(solution: params[:solution])
+      Rails.logger.debug("[PatentApplicationsController#update_solution] Successfully updated solution")
+      flash[:notice] = "Solution updated."
+    else
+      Rails.logger.debug("[PatentApplicationsController#update_solution] Failed to update solution: #{@patent_application.errors.full_messages.join(', ')}")
+      flash[:alert] = "Failed to update solution: #{@patent_application.errors.full_messages.join(', ')}"
     end
 
     redirect_to edit_patent_application_path(@patent_application)
