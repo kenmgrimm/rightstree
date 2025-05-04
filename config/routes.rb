@@ -24,10 +24,10 @@ Rails.application.routes.draw do
     member do
       # Route for setting the title of a patent application
       get :set_title
-      
+
       # Route for updating the title of a patent application
       patch :update_title
-      
+
       # Route for AI chat interactions with existing applications only
       post :chat
 
