@@ -9,7 +9,12 @@
 
 .patent-application-container
   .d-flex.justify-content-between.align-items-center.mb-4
-    h1 Patent Application
+    div
+      - if @patent_application.title.present?
+        h1 = @patent_application.title
+      - else
+        h1.text-muted Untitled Patent Application
+      p.text-muted.small Patent Application ##{@patent_application.id}
     = link_to "Edit", edit_patent_application_path(@patent_application), class: "btn btn-outline-primary"
   
   .row

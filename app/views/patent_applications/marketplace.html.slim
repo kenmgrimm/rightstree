@@ -76,7 +76,7 @@
                 small.text-white
                   = "Published #{time_ago_in_words(patent.updated_at)} ago"
               .card-body
-                h5.card-title = truncate(patent.problem, length: 50)
+                h5.card-title = truncate(patent.title, length: 50)
                 p.card-text.small
                   strong Problem: 
                   = truncate(patent.problem, length: 100)
@@ -117,7 +117,7 @@
                 small.text-muted
                   = "#{time_ago_in_words(patent.updated_at)} ago"
               .card-body
-                h5.card-title = truncate(patent.problem, length: 50)
+                h5.card-title = truncate(patent.title, length: 50)
                 p.card-text.small
                   = truncate(patent.problem, length: 100)
                 

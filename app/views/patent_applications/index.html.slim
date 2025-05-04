@@ -50,8 +50,12 @@
                 small.text-muted
                   = "Updated #{time_ago_in_words(patent.updated_at)} ago"
               .card-body
-                h5.card-title
-                  = patent.problem.present? ? truncate(patent.problem, length: 50) : "Untitled Patent"
+                - if patent.title.present? && patent.title != "New Patent Application"
+                  h5.card-title = patent.title
+                - elsif patent.problem.present?
+                  h5.card-title.text-muted.fst-italic Generated from problem
+                - else
+                  h5.card-title.text-muted.fst-italic Untitled Patent Application
                 
                 - if patent.problem.present?
                   p.card-text.small
@@ -93,7 +97,7 @@
                 small.text-muted
                   = "Updated #{time_ago_in_words(patent.updated_at)} ago"
               .card-body
-                h5.card-title = truncate(patent.problem, length: 50)
+                h5.card-title = truncate(patent.title, length: 50)
                 p.card-text.small
                   strong Problem: 
                   = truncate(patent.problem, length: 100)
@@ -130,7 +134,7 @@
                 small.text-muted
                   = "Published #{time_ago_in_words(patent.updated_at)} ago"
               .card-body
-                h5.card-title = truncate(patent.problem, length: 50)
+                h5.card-title = truncate(patent.title, length: 50)
                 p.card-text.small
                   strong Problem: 
                   = truncate(patent.problem, length: 100)

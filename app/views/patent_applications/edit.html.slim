@@ -8,8 +8,19 @@
 / Uses Turbo Frames for dynamic updates and Stimulus for interactivity
 
 .patent-application-container
+  - if !@patent_application.title.present? || @patent_application.title == "New Patent Application"
+    .alert.alert-info.mb-4
+      .d-flex.align-items-center
+        i.bi.bi-info-circle.me-3.fs-3
+        div
+          p.mb-0 A title will be automatically generated based on your problem statement, or you can provide your own.
+  
   .d-flex.justify-content-between.align-items-center.mb-4
-    h1 Edit Patent Application
+    div
+      - if @patent_application.title.present? && @patent_application.title != "New Patent Application"
+        h1 Edit: #{@patent_application.title}
+      - else
+        h1 New Patent Application
     = link_to "View Application", patent_application_path(@patent_application), class: "btn btn-outline-secondary"
   
   .row

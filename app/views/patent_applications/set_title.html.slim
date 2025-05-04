@@ -1,0 +1,37 @@
+/ app/views/patent_applications/set_title.html.slim
+/
+/ Form for setting the title of a patent application
+/ This is shown before the user can proceed to the chat or edit views
+
+.container.py-5
+  .row.justify-content-center
+    .col-md-8
+      .card.shadow-sm
+        .card-header.bg-primary.text-white
+          h1.h4.mb-0 Name Your Patent Application
+        
+        .card-body
+          - if flash[:alert]
+            .alert.alert-danger
+              = flash[:alert]
+          
+          p.lead Before you can proceed, please provide a meaningful title for your patent application.
+          
+          .alert.alert-info
+            i.bi.bi-info-circle.me-2
+            | A good title should be descriptive and specific to your invention. It will help you identify this patent application later.
+          
+          = form_with url: update_title_patent_application_path(@patent_application), method: :patch, class: "mt-4" do |f|
+            .mb-3
+              = f.label :title, "Patent Title", class: "form-label fw-bold"
+              = f.text_field :title, class: "form-control form-control-lg", placeholder: "Enter a descriptive title for your patent", required: true, autofocus: true, maxlength: 100
+              .form-text.text-muted Make it specific and unique to your invention (max 100 characters).
+            
+            .d-grid.gap-2.mt-4
+              = f.submit "Save Title and Continue", class: "btn btn-primary btn-lg"
+              = link_to "Cancel", patent_applications_path, class: "btn btn-outline-secondary"
+        
+        .card-footer.bg-light
+          p.text-muted.mb-0.small
+            i.bi.bi-lock.me-1
+            | Your title must be unique among your patent applications.

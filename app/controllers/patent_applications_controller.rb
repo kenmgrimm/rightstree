@@ -9,7 +9,7 @@
 # - Facilitating AI chat interactions through PatentService
 
 class PatentApplicationsController < ApplicationController
-  before_action :set_patent_application, only: [ :show, :edit, :update, :mark_complete, :publish, :chat, :update_problem, :update_solution ]
+  before_action :set_patent_application, only: [ :show, :edit, :update, :mark_complete, :publish, :chat, :update_problem, :update_solution, :set_title, :update_title ]
 
   # GET /patent_applications
   # Lists all patent applications owned by the current user
@@ -52,26 +52,55 @@ class PatentApplicationsController < ApplicationController
   end
 
   # GET /patent_applications/create_stub
-  # Creates a stub patent application and redirects to the edit page
-  # This ensures we're always working with a persisted record
+  # Creates a stub patent application and redirects to the set_title page
+  # This ensures we're always working with a persisted record and have a title before proceeding
   def create_stub
     Rails.logger.debug("[PatentApplicationsController#create_stub] Creating stub patent application")
 
-    # Generate a default title with timestamp to ensure uniqueness
-    default_title = "Patent Application #{Time.current.strftime('%Y-%m-%d %H:%M:%S')}"
-    Rails.logger.debug("[PatentApplicationsController#create_stub] Generated default title: #{default_title}")
-
-    # Create the patent application with the default title
-    @patent_application = PatentApplication.create(title: default_title)
+    # Create a new patent application with a temporary title to satisfy the database constraint
+    # We'll force the user to set a real title before proceeding
+    Rails.logger.debug("[PatentApplicationsController#create_stub] Creating application with temporary title")
+    
+    @patent_application = PatentApplication.new(title: "[Temporary Title #{Time.now.to_i}]")
+    @patent_application.save(validate: false)
 
     if @patent_application.persisted?
-      Rails.logger.debug("[PatentApplicationsController#create_stub] Created stub patent application: #{@patent_application.id} with title: #{@patent_application.title}")
-      # Redirect to edit path to ensure consistent user experience
-      redirect_to edit_patent_application_path(@patent_application)
+      Rails.logger.debug("[PatentApplicationsController#create_stub] Created stub patent application: #{@patent_application.id} with temporary title")
+      # Redirect to set_title path to ensure we have a proper title before proceeding
+      redirect_to set_title_patent_application_path(@patent_application)
     else
       Rails.logger.error("[PatentApplicationsController#create_stub] Failed to create patent application: #{@patent_application.errors.full_messages.join(', ')}")
       # Fallback to the home page with an error message
       redirect_to root_path, alert: "Unable to create a new patent application: #{@patent_application.errors.full_messages.join(', ')}. Please try again."
+    end
+  end
+  
+  # GET /patent_applications/:id/set_title
+  # Shows a form for setting the patent application title
+  def set_title
+    Rails.logger.debug("[PatentApplicationsController#set_title] Showing title form for patent application: #{@patent_application.id}")
+    
+    # If the patent application already has a non-temporary title, redirect to edit
+    if @patent_application.title.present? && !@patent_application.title.start_with?("[Temporary Title")
+      Rails.logger.debug("[PatentApplicationsController#set_title] Patent application already has a title: #{@patent_application.title}")
+      redirect_to edit_patent_application_path(@patent_application)
+    end
+  end
+  
+  # PATCH /patent_applications/:id/update_title
+  # Updates the patent application title
+  def update_title
+    Rails.logger.debug("[PatentApplicationsController#update_title] Updating title for patent application: #{@patent_application.id}")
+    Rails.logger.debug("[PatentApplicationsController#update_title] New title: #{params[:title]}")
+    
+    if @patent_application.update(title: params[:title])
+      Rails.logger.debug("[PatentApplicationsController#update_title] Successfully updated title")
+      flash[:notice] = "Title was successfully set."
+      redirect_to edit_patent_application_path(@patent_application)
+    else
+      Rails.logger.debug("[PatentApplicationsController#update_title] Failed to update title: #{@patent_application.errors.full_messages.join(', ')}")
+      flash.now[:alert] = "Failed to set title: #{@patent_application.errors.full_messages.join(', ')}"
+      render :set_title
     end
   end
 
@@ -111,12 +140,29 @@ class PatentApplicationsController < ApplicationController
   # Shows the patent application with problem, solution, and chat history
   def show
     Rails.logger.debug("[PatentApplicationsController#show] Showing patent application: #{@patent_application.id}")
+    
+    # Check if the patent application has a proper title
+    # If it has a temporary title, redirect to the set_title page
+    if @patent_application.title.blank? || @patent_application.title.start_with?("[Temporary Title")
+      Rails.logger.debug("[PatentApplicationsController#show] Patent application does not have a proper title, redirecting to set_title")
+      redirect_to set_title_patent_application_path(@patent_application), alert: "Please set a title for your patent application before proceeding."
+      return
+    end
   end
 
   # GET /patent_applications/:id/edit
   # Renders the form for editing an existing patent application
   def edit
     Rails.logger.debug("[PatentApplicationsController#edit] Editing patent application: #{@patent_application.id}")
+    
+    # Check if the patent application has a proper title
+    # If it has a temporary title, redirect to the set_title page
+    if @patent_application.title.blank? || @patent_application.title.start_with?("[Temporary Title")
+      Rails.logger.debug("[PatentApplicationsController#edit] Patent application does not have a proper title, redirecting to set_title")
+      redirect_to set_title_patent_application_path(@patent_application), alert: "Please set a title for your patent application before proceeding."
+      return
+    end
+    
     Rails.logger.debug("[PatentApplicationsController#edit] Chat history size: #{@patent_application.chat_history&.size || 0}")
   end
 
@@ -170,6 +216,23 @@ class PatentApplicationsController < ApplicationController
     # Find the patent application - it must exist since this is a member route
     @patent_application = PatentApplication.find(params[:id])
     Rails.logger.debug("[PatentApplicationsController#chat] Using patent application: #{@patent_application.id}")
+    
+    # Check if the patent application has a proper title
+    # If it has a temporary title, redirect to the set_title page
+    if @patent_application.title.blank? || @patent_application.title.start_with?("[Temporary Title")
+      Rails.logger.debug("[PatentApplicationsController#chat] Patent application does not have a proper title, redirecting to set_title")
+      respond_to do |format|
+        format.html { redirect_to set_title_patent_application_path(@patent_application), alert: "Please set a title for your patent application before proceeding." }
+        format.turbo_stream {
+          render turbo_stream: turbo_stream.replace(
+            "flash",
+            partial: "shared/flash",
+            locals: { flash: { alert: "Please set a title for your patent application before proceeding." } }
+          )
+        }
+      end
+      return
+    end
 
     # Update problem/solution if provided but not already set
     if problem.present? && @patent_application.problem.blank?
@@ -225,6 +288,10 @@ class PatentApplicationsController < ApplicationController
     ai_message = result[:ai_message] if result.is_a?(Hash)
     suggested_problem = result[:ai_suggested_problem] if result.is_a?(Hash)
     suggested_solution = result[:ai_suggested_solution] if result.is_a?(Hash)
+    suggested_title = result[:ai_suggested_title] if result.is_a?(Hash)
+    
+    # Log the suggested title
+    Rails.logger.debug("[PatentApplicationsController#chat] AI suggested title: #{suggested_title.inspect}")
 
     # Add comprehensive debug logging
     Rails.logger.debug("[PatentApplicationsController#chat] AI message: #{ai_message.inspect}")
@@ -233,8 +300,8 @@ class PatentApplicationsController < ApplicationController
     extracted_chat = nil
     begin
       if ai_message.present?
-        # Extract the problem, solution, and chat content from the AI message
-        _, _, extracted_chat = PatentService.extract_problem_solution_from_history([ { role: "assistant", content: ai_message } ])
+        # Extract the problem, solution, chat content, and title from the AI message
+        _, _, extracted_chat, _ = PatentService.extract_problem_solution_from_history([ { role: "assistant", content: ai_message } ])
         Rails.logger.debug("[PatentApplicationsController#chat] Successfully extracted chat content: #{extracted_chat.inspect}")
       end
     rescue => e
@@ -385,13 +452,57 @@ class PatentApplicationsController < ApplicationController
   def update_problem
     Rails.logger.debug("[PatentApplicationsController#update_problem] Updating problem for patent application: #{@patent_application.id}")
     Rails.logger.debug("[PatentApplicationsController#update_problem] New problem: #{params[:problem]}")
-
-    if @patent_application.update(problem: params[:problem])
-      Rails.logger.debug("[PatentApplicationsController#update_problem] Successfully updated problem")
-      flash[:notice] = "Problem statement updated."
+    
+    # Check for AI-suggested title
+    problem_text = params[:problem]
+    ai_title = params[:ai_title]
+    
+    # Log the AI-suggested title if present
+    if ai_title.present?
+      Rails.logger.debug("[PatentApplicationsController#update_problem] Using AI-suggested title: #{ai_title}")
+    end
+    
+    # Determine which title to use
+    if @patent_application.title.blank? || @patent_application.title.empty?
+      # If we have an AI-suggested title, use it
+      if ai_title.present?
+        title = ai_title
+        Rails.logger.debug("[PatentApplicationsController#update_problem] Using AI-suggested title: #{title}")
+      # Otherwise generate one from the problem
+      elsif problem_text.present?
+        Rails.logger.debug("[PatentApplicationsController#update_problem] Generating title from problem statement")
+        title = generate_title_from_problem(problem_text)
+        Rails.logger.debug("[PatentApplicationsController#update_problem] Generated title: #{title}")
+      end
+      
+      # Update both problem and title if we have a title
+      if title.present?
+        if @patent_application.update(problem: problem_text, title: title)
+          Rails.logger.debug("[PatentApplicationsController#update_problem] Successfully updated problem and title")
+          flash[:notice] = "Problem statement updated and title generated."
+        else
+          Rails.logger.debug("[PatentApplicationsController#update_problem] Failed to update problem and title: #{@patent_application.errors.full_messages.join(', ')}")
+          flash[:alert] = "Failed to update problem: #{@patent_application.errors.full_messages.join(', ')}"
+        end
+      else
+        # Just update the problem if we couldn't generate a title
+        if @patent_application.update(problem: problem_text)
+          Rails.logger.debug("[PatentApplicationsController#update_problem] Successfully updated problem")
+          flash[:notice] = "Problem statement updated."
+        else
+          Rails.logger.debug("[PatentApplicationsController#update_problem] Failed to update problem: #{@patent_application.errors.full_messages.join(', ')}")
+          flash[:alert] = "Failed to update problem: #{@patent_application.errors.full_messages.join(', ')}"
+        end
+      end
     else
-      Rails.logger.debug("[PatentApplicationsController#update_problem] Failed to update problem: #{@patent_application.errors.full_messages.join(', ')}")
-      flash[:alert] = "Failed to update problem: #{@patent_application.errors.full_messages.join(', ')}"
+      # Just update the problem if title already exists
+      if @patent_application.update(problem: problem_text)
+        Rails.logger.debug("[PatentApplicationsController#update_problem] Successfully updated problem")
+        flash[:notice] = "Problem statement updated."
+      else
+        Rails.logger.debug("[PatentApplicationsController#update_problem] Failed to update problem: #{@patent_application.errors.full_messages.join(', ')}")
+        flash[:alert] = "Failed to update problem: #{@patent_application.errors.full_messages.join(', ')}"
+      end
     end
 
     redirect_to edit_patent_application_path(@patent_application)
@@ -401,13 +512,29 @@ class PatentApplicationsController < ApplicationController
   def update_solution
     Rails.logger.debug("[PatentApplicationsController#update_solution] Updating solution for patent application: #{@patent_application.id}")
     Rails.logger.debug("[PatentApplicationsController#update_solution] New solution: #{params[:solution]}")
-
-    if @patent_application.update(solution: params[:solution])
-      Rails.logger.debug("[PatentApplicationsController#update_solution] Successfully updated solution")
-      flash[:notice] = "Solution updated."
+    
+    # If title is empty and we have a problem statement, generate a title
+    if @patent_application.title.blank? && @patent_application.problem.present?
+      Rails.logger.debug("[PatentApplicationsController#update_solution] Title is empty, generating from problem")
+      title = generate_title_from_problem(@patent_application.problem)
+      Rails.logger.debug("[PatentApplicationsController#update_solution] Generated title: #{title}")
+      
+      if @patent_application.update(solution: params[:solution], title: title)
+        Rails.logger.debug("[PatentApplicationsController#update_solution] Successfully updated solution and title")
+        flash[:notice] = "Solution updated and title generated."
+      else
+        Rails.logger.debug("[PatentApplicationsController#update_solution] Failed to update solution and title: #{@patent_application.errors.full_messages.join(', ')}")
+        flash[:alert] = "Failed to update solution: #{@patent_application.errors.full_messages.join(', ')}"
+      end
     else
-      Rails.logger.debug("[PatentApplicationsController#update_solution] Failed to update solution: #{@patent_application.errors.full_messages.join(', ')}")
-      flash[:alert] = "Failed to update solution: #{@patent_application.errors.full_messages.join(', ')}"
+      # Just update the solution if title already exists
+      if @patent_application.update(solution: params[:solution])
+        Rails.logger.debug("[PatentApplicationsController#update_solution] Successfully updated solution")
+        flash[:notice] = "Solution updated."
+      else
+        Rails.logger.debug("[PatentApplicationsController#update_solution] Failed to update solution: #{@patent_application.errors.full_messages.join(', ')}")
+        flash[:alert] = "Failed to update solution: #{@patent_application.errors.full_messages.join(', ')}"
+      end
     end
 
     redirect_to edit_patent_application_path(@patent_application)
@@ -459,6 +586,35 @@ class PatentApplicationsController < ApplicationController
   end
 
   private
+
+  # Generate a title from the problem statement
+  def generate_title_from_problem(problem_text)
+    Rails.logger.debug("[PatentApplicationsController#generate_title_from_problem] Generating title from problem: #{problem_text[0..50]}...")
+    
+    # Extract the first sentence or up to 100 characters
+    new_title = ""
+    
+    if problem_text.present?
+      # Try to get the first sentence (ending with period, question mark, or exclamation point)
+      first_sentence_match = problem_text.match(/^(.+?[.!?])\s/)
+      
+      if first_sentence_match && first_sentence_match[1]
+        new_title = first_sentence_match[1].strip
+      else
+        # If no sentence ending found, take the first 100 chars or the whole text if shorter
+        new_title = problem_text[0...[100, problem_text.length].min]
+      end
+      
+      # Ensure the title isn't too long - truncate to 100 chars if needed
+      if new_title.length > 100
+        new_title = new_title[0...97] + "..."
+      end
+      
+      Rails.logger.debug("[PatentApplicationsController#generate_title_from_problem] Generated title: #{new_title}")
+    end
+    
+    new_title
+  end
 
   # Sets the patent application instance variable from the id parameter
   def set_patent_application

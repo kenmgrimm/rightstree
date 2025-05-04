@@ -4,6 +4,22 @@
 / Used in the show view and for Turbo Stream updates
 
 div[id=dom_id(patent_application)]
+  / Title card
+  .card.mb-4
+    .card-header
+      h2 Patent Title
+    .card-body
+      - if patent_application.title.present?
+        p.title-text.fw-bold = patent_application.title
+      - else
+        p.text-muted.fst-italic A title will be generated based on your problem statement
+      
+      / Debug logging for title
+      - if Rails.env.development?
+        .debug-info.small.text-muted.mt-2
+          | Title length: #{patent_application.title.to_s.length} characters
+  
+  / Problem card
   .card.mb-4
     .card-header
       h2 Technical Problem

@@ -20,24 +20,24 @@ class PatentService
   def self.guide_problem_solution(messages:, user_input:, current_problem: nil, current_solution: nil, update_problem: false, update_solution: false)
     Rails.logger.debug("[PatentService] Received user_input: #{user_input.inspect}")
     messages ||= []
-    # System prompt always first
-    if messages.empty? || messages.first[:role] != "system"
-      messages.unshift({ role: "system", content: system_prompt })
-    end
-    # Always include current problem/solution as context
-    if current_problem
-      messages << { role: "assistant", content: "Current Problem: #{current_problem}" }
-    end
-    if current_solution
-      messages << { role: "assistant", content: "Current Solution: #{current_solution}" }
+
+    # We'll handle the system prompt in standardize_messages_for_openai
+    # No need to add it here
+
+    # Add the current user input to the messages
+    # Only if it's not already the last user message (avoid duplicates)
+    last_user_message = messages.reverse.find { |m| (m[:role] || m["role"]).to_s == "user" }
+    last_user_content = last_user_message ? (last_user_message[:content] || last_user_message["content"]).to_s : nil
+
+    if last_user_content != user_input
+      messages << { role: "user", content: user_input }
+      Rails.logger.debug("[PatentService] Added user input to messages: #{user_input}")
+    else
+      Rails.logger.debug("[PatentService] User input already in messages, not adding duplicate")
     end
 
-    # If there is no current solution, ensure the AI only prompts the user to provide one, not to generate it
-    if current_solution.nil? || current_solution.strip.empty?
-      # Mark in context that the user must provide the solution
-      messages << { role: "system", content: "Do not propose or extrapolate a solution until the user provides one. Only prompt the user to describe their own solution." }
-    end
-    messages << { role: "user", content: user_input }
+    # Log the conversation history size
+    Rails.logger.debug("[PatentService] Conversation history size: #{messages.size} messages")
 
     # Standardize the messages for OpenAI API
     standardized_messages = standardize_messages_for_openai(messages)
@@ -71,9 +71,11 @@ class PatentService
 
     # binding.break
 
-    # Extract AI-suggested problem/solution from latest assistant message
-    ai_suggested_problem, ai_suggested_solution = extract_problem_solution_from_history(messages)
-    Rails.logger.debug("[PatentService] AI-suggested problem: #{ai_suggested_problem.inspect}, solution: #{ai_suggested_solution.inspect}")
+    # Extract AI-suggested problem/solution/title from latest assistant message
+    ai_suggested_problem, ai_suggested_solution, _, ai_suggested_title = extract_problem_solution_from_history(messages)
+    Rails.logger.debug("[PatentService] AI-suggested problem: #{ai_suggested_problem.inspect}")
+    Rails.logger.debug("[PatentService] AI-suggested solution: #{ai_suggested_solution.inspect}")
+    Rails.logger.debug("[PatentService] AI-suggested title: #{ai_suggested_title.inspect}")
 
     # Only update canonical fields if explicitly requested
     new_problem = update_problem && ai_suggested_problem ? ai_suggested_problem : current_problem
@@ -86,32 +88,62 @@ class PatentService
       ai_message: ai_message,
       raw_response: response,
       ai_suggested_problem: ai_suggested_problem,
-      ai_suggested_solution: ai_suggested_solution
+      ai_suggested_solution: ai_suggested_solution,
+      ai_suggested_title: ai_suggested_title
     }
   end
 
   # System prompt for the AI
   def self.system_prompt
     <<~PROMPT.strip
-      You are a patent expert. Guide the user to clearly define a technical problem and a novel solution suitable for a patent application. Ask clarifying questions as needed. Only respond to requests related to the problem and solution discovery process.
+      You are a patent expert. Guide the user through a structured process to define a technical problem and solution suitable for a patent application. Follow the conversation flow strictly in this order:
 
-      Here are some example questions you can use to prompt the user:
-      - "What technical area are you interested in?"
-      - "Do you have a product or service in mind?"
-      - "What is the problem you are trying to solve?"
-      - "Do you have an existing patent application that your problem or solution is attempting to address?"
-      - "Describe to me the solution you are suggesting to address the problem."
-      - "Can you summarize the problem in 1-3 sentences?"
-      - "Can you describe your solution in a short paragraph?"
+      CONVERSATION FLOW - YOU MUST FOLLOW THIS ORDER:
+      1. First, help the user clearly define the PROBLEM
+         - Ask: "What technical area are you interested in?"
+         - Ask: "What specific challenge or limitation are you facing?"
+         - Ask: "Why is this a problem? What impact does it have?"
+         - Ask: "In what context or domain does this problem occur?"
+      2. Once the problem is well-defined, suggest a concise TITLE
+         - Provide a title that captures the core technical problem
+         - Ask: "Does this title accurately reflect the problem we've defined?"
+      3. Only after the problem and title are established, discuss the SOLUTION
+         - Ask: "What solution are you proposing for this problem?"
+         - Ask: "How does your solution address the specific challenges we identified?"
+
+      DO NOT ask about solutions until you have helped the user fully define the problem and have suggested a title. This is critical.
+
+      PROBLEM STATEMENT GUIDELINES:
+      - DO NOT simply repeat what the user says as the problem statement
+      - Analyze the user's input and extract the underlying technical problem
+      - A good problem statement should include:
+        1. The specific technical challenge or limitation
+        2. Why this is a problem (impact or consequences)
+        3. The context or domain where this problem occurs
+      - Rewrite vague or incomplete problem descriptions into comprehensive statements
+      - If the user provides an incomplete problem description, ask clarifying questions
+      - When suggesting a problem statement, be assertive and direct:
+        * "The core technical problem is..."
+        * "This is a significant challenge because..."
+        * "The technical context for this problem is..."
+      - Make definitive statements, not tentative observations
+      - Provide clear reasoning for your problem formulation
+
+      TITLE GUIDELINES:
+      - Create a concise, descriptive title under 15 words
+      - Focus on the core technical problem being solved
+      - Use specific terminology relevant to the field
+      - Avoid generic phrases like "system and method for"
 
       Important:
       - At the end of every message, output your response as a JSON object in a single code block, like this:
       {
-        "problem": "A concise problem statement here.",
+        "problem": "A concise but comprehensive problem statement here that includes the technical challenge, impact, and context.",
         "solution": "A concise solution statement here.",
+        "title": "A condensed title under 15 words focusing on the core technical problem.",
         "message": "Conversational text, clarifications, or next questions for the user."
       }
-      - Always include all three fields: "problem", "solution", and "chat" in your JSON response, even if one is empty. If a value is unknown or not yet provided, use an empty string (""). Never omit a field or use null.
+      - Always include all four fields: "problem", "solution", "title", and "message" in your JSON response, even if one is empty. If a value is unknown or not yet provided, use an empty string (""). Never omit a field or use null.
       - Only include this code block in your response. Do not include any other text outside the code block.
       - If you are not sure, ask the user for clarification before proposing a summary.
 
@@ -134,7 +166,7 @@ class PatentService
 
   def self.extract_problem_solution_from_history(messages)
     last_assistant = messages.reverse.find { |m| m[:role] == "assistant" }
-    return [ nil, nil, nil ] unless last_assistant && last_assistant[:content]
+    return [ nil, nil, nil, nil ] unless last_assistant && last_assistant[:content]
     text = last_assistant[:content]
 
     Rails.logger.debug("[PatentService] Extracting from content: #{text[0..100]}...")
@@ -150,16 +182,18 @@ class PatentService
           parsed = JSON.parse(json_block)
           problem = parsed["problem"]
           solution = parsed["solution"]
+          title = parsed["title"]
           message = parsed["message"] || parsed["chat"] # Support both message and chat fields
 
           # Log the extracted values
           Rails.logger.debug("[PatentService] Extracted message: #{message.inspect}")
           Rails.logger.debug("[PatentService] Extracted problem: #{problem.inspect}")
           Rails.logger.debug("[PatentService] Extracted solution: #{solution.inspect}")
+          Rails.logger.debug("[PatentService] Extracted title: #{title.inspect}")
 
           # Return the extracted message content instead of the raw JSON
-          if message.present? || problem.present? || solution.present?
-            return [ problem, solution, message ]
+          if message.present? || problem.present? || solution.present? || title.present?
+            return [ problem, solution, message, title ]
           end
         rescue JSON::ParserError => e
           Rails.logger.warn("[PatentService] JSON parse error: #{e.message}")
@@ -167,55 +201,76 @@ class PatentService
       end
     end
 
-    # If we couldn't extract from JSON or some fields were missing,
     # clean the text by removing JSON code blocks
     cleaned_text = text.gsub(/```json.*?```/m, "").strip
 
     if cleaned_text.present?
       Rails.logger.debug("[PatentService] Using cleaned text: #{cleaned_text}")
-      return [ nil, nil, cleaned_text ]
+      return [ nil, nil, cleaned_text, nil ]
     end
 
     # If all else fails, use the entire response but remove the code block markers
-    cleaned_response = text.gsub(/```json|```/m, "").strip
-    Rails.logger.debug("[PatentService] Using cleaned response: #{cleaned_response[0..100]}...")
-    [ nil, nil, cleaned_response ]
+    final_text = text.gsub(/```.*?```/m, "").strip
+    [ nil, nil, final_text, nil ]
   end
 
-  # Standardize messages for OpenAI API to ensure consistent format
+  # Standardize messages for OpenAI API to ensure consistent format and maintain conversation context
   # OpenAI API expects each message to have 'role' and 'content' keys
   def self.standardize_messages_for_openai(messages)
     Rails.logger.debug("[PatentService#standardize_messages_for_openai] Standardizing #{messages.size} messages")
 
-    standardized = messages.map do |msg|
-      # Extract role - could be symbol or string key
-      role = msg[:role] || msg["role"]
+    # First, ensure we have the system prompt as the first message
+    system_prompt_message = { "role" => "system", "content" => system_prompt }
 
-      # Extract content based on message format
-      if role == "assistant" || role == :assistant
-        # For assistant messages, check if content is a hash with our standardized format
+    # Extract and clean up the conversation history
+    conversation = []
+
+    # Process each message to extract the actual conversation
+    messages.each do |msg|
+      # Skip any empty or nil messages
+      next if msg.nil? || (msg.is_a?(Hash) && msg.empty?)
+
+      # Extract role - could be symbol or string key
+      role = (msg[:role] || msg["role"]).to_s
+
+      # Skip system messages that aren't the main system prompt
+      # We'll add our own system prompt at the beginning
+      next if role == "system" && msg != messages.first
+
+      # For user messages
+      if role == "user"
+        # Extract content from either content or message field
+        content = msg[:message] || msg["message"] || msg[:content] || msg["content"]
+        # Skip empty messages
+        next if content.nil? || content.to_s.strip.empty?
+        conversation << { "role" => "user", "content" => content.to_s }
+
+      # For assistant messages
+      elsif role == "assistant"
         content_hash = msg[:content] || msg["content"]
 
+        # Handle different formats of assistant messages
         if content_hash.is_a?(Hash) && (content_hash["message"] || content_hash[:message])
-          # If it's our standardized format, use the message field
+          # If it's our standardized format with a message field, use that
           content = content_hash["message"] || content_hash[:message]
         else
           # Otherwise use the content directly
           content = content_hash
         end
-      else
-        # For user/system messages, get content from message or content field
-        content = msg[:message] || msg["message"] || msg[:content] || msg["content"]
+
+        # Skip empty messages
+        next if content.nil? || content.to_s.strip.empty?
+        conversation << { "role" => "assistant", "content" => content.to_s }
       end
-
-      # Ensure content is a string
-      content = content.to_s
-
-      # Create a standardized message with string keys as expected by OpenAI API
-      { "role" => role.to_s, "content" => content }
     end
 
-    Rails.logger.debug("[PatentService#standardize_messages_for_openai] Standardized messages: #{standardized.inspect}") if Rails.env.development?
+    # Construct the final message array with system prompt first, then conversation
+    standardized = [ system_prompt_message ] + conversation
+
+    # Log the standardized messages
+    Rails.logger.debug("[PatentService#standardize_messages_for_openai] Standardized #{standardized.size} messages")
+    Rails.logger.debug("[PatentService#standardize_messages_for_openai] First few messages: #{standardized[0..2].inspect}") if Rails.env.development?
+
     standardized
   end
 end

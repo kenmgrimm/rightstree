@@ -82,6 +82,11 @@ export default class extends Controller {
       originalValue = this.originalValues.title
     } else if (event.target === this.problemTarget) {
       originalValue = this.originalValues.problem
+      
+      // If this is the problem field and title is empty, update the title
+      if (fieldValue && !this.titleTarget.value.trim()) {
+        this.updateTitleFromProblem(fieldValue)
+      }
     } else if (event.target === this.solutionTarget) {
       originalValue = this.originalValues.solution
     }
@@ -197,6 +202,40 @@ export default class extends Controller {
     }
     
     this.validateForm()
+  }
+  
+  // Automatically generate a title from the problem statement
+  updateTitleFromProblem(problemText) {
+    console.debug("[PatentFormController] Updating title from problem statement")
+    
+    // Extract the first sentence or up to 100 characters
+    let newTitle = ""
+    
+    if (problemText) {
+      // Try to get the first sentence (ending with period, question mark, or exclamation point)
+      const firstSentenceMatch = problemText.match(/^(.+?[.!?])\s/)
+      
+      if (firstSentenceMatch && firstSentenceMatch[1]) {
+        newTitle = firstSentenceMatch[1].trim()
+      } else {
+        // If no sentence ending found, take the first 100 chars or the whole text if shorter
+        newTitle = problemText.substring(0, Math.min(100, problemText.length))
+      }
+      
+      // Ensure the title isn't too long - truncate to 100 chars if needed
+      if (newTitle.length > 100) {
+        newTitle = newTitle.substring(0, 97) + "..."
+      }
+      
+      // Update the title field
+      this.titleTarget.value = newTitle
+      
+      // Log the title update
+      console.debug("[PatentFormController] Title updated from problem:", {
+        from: "",
+        to: newTitle
+      })
+    }
   }
   
   // Validates the form fields and enables/disables the submit button
