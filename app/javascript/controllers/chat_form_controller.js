@@ -1,308 +1,98 @@
 // app/javascript/controllers/chat_form_controller.js
 //
-// Stimulus controller for the ChatGPT-style AI chat form
-// Handles chat message submission, loading states, auto-expanding text area, and keyboard shortcuts
-//
-// This controller handles the chat form functionality:
-// - Auto-expanding text area
-// - Enter key to submit
-// - Loading state during submission
-// - Focus/blur effects for enhanced UI feedback
-// - Comprehensive debug logging
+// Stimulus controller for the chat form
+// Handles immediate display of user messages and loading indicator
 
-import { Controller } from "@hotwired/stimulus"
+import { Controller } from "@hotwired/stimulus";
 
 export default class extends Controller {
-  static targets = ["messageInput", "submitButton", "buttonText", "spinner"]
+  static targets = ["messageInput", "submitButton", "buttonText", "spinner"];
   
   connect() {
-    console.debug("[ChatFormController] Connected")
-    this.adjustHeight()
-    this.messageInputTarget.focus()
-    
-    // Scroll to bottom immediately
-    this.scrollChatToBottom()
-    
-    // Also scroll after a short delay to ensure all content is loaded
-    setTimeout(() => {
-      this.scrollChatToBottom()
-      console.debug("[ChatFormController] Scrolled to bottom after delay")
-    }, 100)
-    
-    // And again after images and other resources might have loaded
-    setTimeout(() => {
-      this.scrollChatToBottom()
-      console.debug("[ChatFormController] Scrolled to bottom after longer delay")
-    }, 500)
-    
-    // Add a MutationObserver to scroll to bottom when new messages are added
-    this.setupScrollObserver()
+    console.debug("[ChatFormController] Connected");
+    this.adjustHeight();
+    this.messageInputTarget.focus();
   }
   
-  // Clean up observers when the controller is disconnected
   disconnect() {
-    console.debug("[ChatFormController] Disconnected, cleaning up observers")
-    
-    // Disconnect the main chat observer if it exists
-    if (this.chatObserver) {
-      this.chatObserver.disconnect()
-      console.debug("[ChatFormController] Disconnected main chat observer")
-    }
-    
-    // Disconnect the desktop chat observer if it exists
-    if (this.desktopChatObserver) {
-      this.desktopChatObserver.disconnect()
-      console.debug("[ChatFormController] Disconnected desktop chat observer")
-    }
-  }
-  
-  // Scroll the chat container to the bottom
-  scrollChatToBottom() {
-    // Get all possible chat containers
-    const chatMessages = document.getElementById('chat_messages')
-    const mobileChatMessages = document.getElementById('mobile_chat_messages')
-    const desktopChatMessages = document.getElementById('desktop_chat_messages')
-    
-    // Scroll main chat container if it exists
-    if (chatMessages) {
-      chatMessages.scrollTop = chatMessages.scrollHeight
-      console.debug("[ChatFormController] Scrolled main chat to bottom", {
-        container: 'chat_messages',
-        scrollHeight: chatMessages.scrollHeight,
-        scrollTop: chatMessages.scrollTop
-      })
-    }
-    
-    // Scroll mobile container if it exists
-    if (mobileChatMessages) {
-      mobileChatMessages.scrollTop = mobileChatMessages.scrollHeight
-      console.debug("[ChatFormController] Scrolled mobile chat to bottom", {
-        container: 'mobile_chat_messages',
-        scrollHeight: mobileChatMessages.scrollHeight,
-        scrollTop: mobileChatMessages.scrollTop
-      })
-    }
-    
-    // Scroll desktop container if it exists
-    if (desktopChatMessages) {
-      desktopChatMessages.scrollTop = desktopChatMessages.scrollHeight
-      console.debug("[ChatFormController] Scrolled desktop chat to bottom", {
-        container: 'desktop_chat_messages',
-        scrollHeight: desktopChatMessages.scrollHeight,
-        scrollTop: desktopChatMessages.scrollTop
-      })
-    }
-  }
-  
-  // Set up an observer to watch for changes in the chat containers
-  setupScrollObserver() {
-    // Get all possible chat containers
-    const chatMessages = document.getElementById('chat_messages')
-    const mobileChatMessages = document.getElementById('mobile_chat_messages')
-    const desktopChatMessages = document.getElementById('desktop_chat_messages')
-    
-    // Create a new observer that will scroll to bottom when changes are detected
-    const createObserver = () => {
-      return new MutationObserver((mutations) => {
-        console.debug("[ChatFormController] Chat content changed, scrolling to bottom", {
-          mutations: mutations.length
-        })
-        this.scrollChatToBottom()
-      })
-    }
-    
-    // Set up observer for main chat container
-    if (chatMessages) {
-      this.chatObserver = createObserver()
-      this.chatObserver.observe(chatMessages, {
-        childList: true,  // Watch for added/removed nodes
-        subtree: true     // Watch the entire subtree
-      })
-      console.debug("[ChatFormController] Set up mutation observer for main chat container")
-    }
-    
-    // Set up observer for mobile chat container if it exists
-    if (mobileChatMessages) {
-      // Create a new observer if we don't already have one
-      if (!this.chatObserver) {
-        this.chatObserver = createObserver()
-      }
-      
-      this.chatObserver.observe(mobileChatMessages, { 
-        childList: true,
-        subtree: true
-      })
-      console.debug("[ChatFormController] Set up mutation observer for mobile chat container")
-    }
-    
-    // Set up observer for desktop chat container if it exists
-    if (desktopChatMessages) {
-      // Create a separate observer for desktop if we already have an observer for another container
-      if (this.chatObserver && (chatMessages || mobileChatMessages)) {
-        this.desktopChatObserver = createObserver()
-        this.desktopChatObserver.observe(desktopChatMessages, { 
-          childList: true,
-          subtree: true
-        })
-        console.debug("[ChatFormController] Set up separate mutation observer for desktop chat container")
-      } else {
-        // Use the main observer if no other container has been observed
-        if (!this.chatObserver) {
-          this.chatObserver = createObserver()
-        }
-        
-        this.chatObserver.observe(desktopChatMessages, {
-          childList: true,
-          subtree: true
-        })
-        console.debug("[ChatFormController] Set up mutation observer for desktop chat container")
-      }
-    }
-    
-    // Log error if no chat container was found
-    if (!chatMessages && !mobileChatMessages && !desktopChatMessages) {
-      console.error("[ChatFormController] Could not find any chat messages container")
-    }
+    console.debug("[ChatFormController] Disconnected");
   }
   
   // Auto-adjust the height of the text area as the user types
   adjustHeight() {
-    const textarea = this.messageInputTarget
-    
-    // Reset height to auto to get the correct scrollHeight
-    textarea.style.height = 'auto'
-    
-    // Set the height to match content (with a max height)
-    const newHeight = Math.min(textarea.scrollHeight, 150)
-    textarea.style.height = `${newHeight}px`
-    
-    console.debug("[ChatFormController] Adjusted textarea height", {
-      scrollHeight: textarea.scrollHeight,
-      newHeight: newHeight,
-      content: textarea.value.length > 0 ? `${textarea.value.substring(0, 20)}...` : "(empty)"
-    })
-  }
-  
-  // Handle form submission start - show loading state
-  handleSubmitStart() {
-    const message = this.messageInputTarget.value
-    if (!message.trim()) return
-    
-    console.debug("[ChatFormController] Submitting chat message", {
-      messageLength: message.length,
-      messagePreview: message.substring(0, 30) + (message.length > 30 ? '...' : ''),
-      timestamp: new Date().toISOString()
-    })
-    
-    // No longer adding user message here - handled by server via Turbo Streams
-    
-    // Add loading indicator for AI response
-    this.addLoadingIndicator()
-    
-    // Show loading state on button
-    this.submitButtonTarget.disabled = true
-    this.buttonTextTarget.classList.add("opacity-0")
-    this.spinnerTarget.classList.remove("d-none")
-  }
-  
-  // Handle form submission end - reset form and loading state
-  handleSubmitEnd(event) {
-    console.debug("[ChatFormController] Chat message submission completed", {
-      success: !event.detail.error,
-      status: event.detail.fetchResponse?.response?.status,
-      timestamp: new Date().toISOString()
-    })
-    
-    // Remove loading indicator
-    this.removeLoadingIndicator()
-    
-    // Reset form
-    this.messageInputTarget.value = ""
-    this.adjustHeight() // Reset height
-    this.messageInputTarget.focus()
-    
-    // Reset loading state
-    this.submitButtonTarget.disabled = false
-    this.buttonTextTarget.classList.remove("opacity-0")
-    this.spinnerTarget.classList.add("d-none")
-    
-    // Ensure chat is scrolled to bottom after message is sent
-    this.scrollChatToBottom()
-    
-    // Also scroll after a short delay to ensure all content is loaded
-    // This is important because Turbo Stream updates might not be fully rendered yet
-    setTimeout(() => {
-      this.scrollChatToBottom()
-      console.debug("[ChatFormController] Scrolled to bottom after message submission")
-    }, 100)
-    
-    // And again after a longer delay to catch any delayed renders
-    setTimeout(() => {
-      this.scrollChatToBottom()
-    }, 500)
+    const textarea = this.messageInputTarget;
+    textarea.style.height = 'auto';
+    const newHeight = Math.min(textarea.scrollHeight, 150);
+    textarea.style.height = `${newHeight}px`;
   }
   
   // Handle keyboard events (Enter to send, Shift+Enter for new line)
   handleKeydown(event) {
-    // Submit on Enter (without Shift)
     if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault()
-      this.element.requestSubmit()
-      
-      console.debug("[ChatFormController] Form submitted via Enter key", {
-        timestamp: new Date().toISOString()
-      })
-    } else {
-      console.debug("[ChatFormController] Key pressed", {
-        key: event.key,
-        shiftKey: event.shiftKey,
-        timestamp: new Date().toISOString()
-      })
+      event.preventDefault();
+      this.element.requestSubmit();
+      console.debug("[ChatFormController] Form submitted via Enter key");
     }
   }
   
-  // Handle focus event - enhance the input appearance
-  handleFocus() {
-    console.debug("[ChatFormController] Input focused")
-    this.element.querySelector('.chat-input-wrapper').style.boxShadow = "0 0 0 2px var(--primary-light), 0 4px 6px rgba(0, 0, 0, 0.1)"
-    this.submitButtonTarget.style.transform = "scale(1.05)"
+  // Handle form submission start - show loading state
+  handleSubmitStart() {
+    const message = this.messageInputTarget.value.trim();
+    if (!message) return;
+    
+    console.debug("[ChatFormController] Submit start - adding message and loading indicator");
+    
+    // Add user message to chat
+    this.addUserMessage(message);
+    
+    // Add loading indicator
+    this.addLoadingIndicator();
+    
+    // Show loading state on button
+    this.submitButtonTarget.disabled = true;
+    this.buttonTextTarget.classList.add("opacity-0");
+    this.spinnerTarget.classList.remove("d-none");
   }
   
-  // Handle blur event - return to normal appearance
-  handleBlur() {
-    console.debug("[ChatFormController] Input blurred")
-    this.messageInputTarget.parentElement.classList.remove("shadow")
-    this.messageInputTarget.parentElement.classList.add("shadow-sm")
+  // Handle form submission end - reset form and loading state
+  handleSubmitEnd() {
+    console.debug("[ChatFormController] Submit end - removing loading indicator");
+    
+    // Remove loading indicator
+    this.removeLoadingIndicator();
+    
+    // Reset form
+    this.messageInputTarget.value = "";
+    this.adjustHeight();
+    this.messageInputTarget.focus();
+    
+    // Reset loading state
+    this.submitButtonTarget.disabled = false;
+    this.buttonTextTarget.classList.remove("opacity-0");
+    this.spinnerTarget.classList.add("d-none");
   }
   
   // Add user message immediately to the chat
   addUserMessage(message) {
-    console.debug("[ChatFormController] Adding user message to chat", {
-      messageLength: message.length,
-      timestamp: new Date().toISOString()
-    })
+    console.debug("[ChatFormController] Adding user message to chat");
     
-    // Get both mobile and desktop chat containers
-    const mobileChatMessages = document.getElementById('mobile_chat_messages')
-    const desktopChatMessages = document.getElementById('desktop_chat_messages')
-    
-    if (!mobileChatMessages && !desktopChatMessages) {
-      console.error("[ChatFormController] Could not find any chat messages container")
-      return
+    const chatMessages = document.getElementById('chat_messages');
+    if (!chatMessages) {
+      console.error("[ChatFormController] Could not find chat messages container");
+      return;
     }
     
-    const timestamp = Math.floor(Date.now() / 1000)
-    const messageId = `message_${Math.random().toString(36).substring(2, 10)}`
+    const messageId = `temp_user_message_${Date.now()}`;
     
     const messageHTML = `
-      <div class="message mb-4 d-flex user-message justify-content-end" id="${messageId}" data-timestamp="${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}">
+      <div class="message mb-4 d-flex user-message justify-content-end temp-message" id="${messageId}">
         <div class="message-content p-3 rounded-3 shadow-sm text-white" style="max-width: 85%; background-color: var(--primary-color);">
           <div class="message-body">
-            <p class="mb-1" style="color: white;">${this.escapeHTML(message)}</p>
+            <p class="mb-1">${this.escapeHTML(message)}</p>
           </div>
           <div class="message-footer d-flex justify-content-between align-items-center mt-2">
-            <small class="opacity-75" style="color: rgba(255,255,255,0.8);">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
-            <small class="opacity-75" style="color: rgba(255,255,255,0.8);">You</small>
+            <small class="opacity-75">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</small>
+            <small class="opacity-75">You</small>
           </div>
         </div>
         <div class="message-avatar ms-3 flex-shrink-0">
@@ -311,43 +101,32 @@ export default class extends Controller {
           </div>
         </div>
       </div>
-    `
+    `;
     
-    // Add message to both containers
-    if (mobileChatMessages) {
-      mobileChatMessages.insertAdjacentHTML('beforeend', messageHTML)
-      mobileChatMessages.scrollTop = mobileChatMessages.scrollHeight
-    }
-    
-    if (desktopChatMessages) {
-      desktopChatMessages.insertAdjacentHTML('beforeend', messageHTML)
-      desktopChatMessages.scrollTop = desktopChatMessages.scrollHeight
-    }
+    chatMessages.insertAdjacentHTML('beforeend', messageHTML);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
   }
   
   // Add loading indicator while waiting for AI response
   addLoadingIndicator() {
-    console.debug("[ChatFormController] Adding loading indicator")
+    console.debug("[ChatFormController] Adding loading indicator");
     
-    // Get both mobile and desktop chat containers
-    const mobileChatMessages = document.getElementById('mobile_chat_messages')
-    const desktopChatMessages = document.getElementById('desktop_chat_messages')
-    
-    if (!mobileChatMessages && !desktopChatMessages) {
-      console.error("[ChatFormController] Could not find any chat messages container")
-      return
+    const chatMessages = document.getElementById('chat_messages');
+    if (!chatMessages) {
+      console.error("[ChatFormController] Could not find chat messages container");
+      return;
     }
     
-    const loadingId = 'ai_loading_indicator'
+    const loadingId = 'temp_ai_loading_indicator';
     
     // Remove any existing loading indicator
-    const existingIndicator = document.getElementById(loadingId)
+    const existingIndicator = document.getElementById(loadingId);
     if (existingIndicator) {
-      existingIndicator.remove()
+      existingIndicator.remove();
     }
     
     const loadingHTML = `
-      <div class="message mb-4 d-flex ai-message" id="${loadingId}">
+      <div class="message mb-4 d-flex ai-message temp-message" id="${loadingId}">
         <div class="message-avatar me-3 flex-shrink-0">
           <div class="avatar text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; background: linear-gradient(135deg, var(--primary-color), var(--accent-color));">
             <i class="bi bi-robot"></i>
@@ -363,23 +142,15 @@ export default class extends Controller {
           </div>
         </div>
       </div>
-    `
+    `;
     
-    // Add loading indicator to both containers
-    if (mobileChatMessages) {
-      mobileChatMessages.insertAdjacentHTML('beforeend', loadingHTML)
-      mobileChatMessages.scrollTop = mobileChatMessages.scrollHeight
-    }
-    
-    if (desktopChatMessages) {
-      desktopChatMessages.insertAdjacentHTML('beforeend', loadingHTML)
-      desktopChatMessages.scrollTop = desktopChatMessages.scrollHeight
-    }
+    chatMessages.insertAdjacentHTML('beforeend', loadingHTML);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
     
     // Add CSS for the typing indicator if it doesn't exist
     if (!document.getElementById('typing-indicator-style')) {
-      const style = document.createElement('style')
-      style.id = 'typing-indicator-style'
+      const style = document.createElement('style');
+      style.id = 'typing-indicator-style';
       style.textContent = `
         .typing-indicator {
           display: flex;
@@ -405,31 +176,25 @@ export default class extends Controller {
           0%, 60%, 100% { transform: translateY(0); }
           30% { transform: translateY(-6px); }
         }
-      `
-      document.head.appendChild(style)
+      `;
+      document.head.appendChild(style);
     }
   }
   
-  // Remove loading indicator when AI response is received
+  // Remove temporary messages when AI response is received
   removeLoadingIndicator() {
-    console.debug("[ChatFormController] Removing loading indicator")
+    console.debug("[ChatFormController] Removing temporary messages");
     
-    // Remove from both mobile and desktop containers
-    const mobileLoadingIndicator = document.querySelector('#mobile_chat_messages #ai_loading_indicator')
-    if (mobileLoadingIndicator) {
-      mobileLoadingIndicator.remove()
-    }
-    
-    const desktopLoadingIndicator = document.querySelector('#desktop_chat_messages #ai_loading_indicator')
-    if (desktopLoadingIndicator) {
-      desktopLoadingIndicator.remove()
-    }
+    document.querySelectorAll('.temp-message').forEach(el => {
+      console.debug("[ChatFormController] Removing temporary message", el.id);
+      el.remove();
+    });
   }
   
   // Helper method to escape HTML to prevent XSS
   escapeHTML(text) {
-    const div = document.createElement('div')
-    div.textContent = text
-    return div.innerHTML
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 }

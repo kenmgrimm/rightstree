@@ -1,19 +1,18 @@
 // app/javascript/controllers/responsive_layout_controller.js
 //
 // Stimulus controller for handling responsive layout behavior
-// Ensures proper display of content in both mobile and desktop views
-// Prevents duplicate content from being displayed simultaneously
+// Ensures proper display of content across all device sizes
+// Handles layout adjustments based on screen size
 //
 // This controller:
-// - Manages visibility of mobile vs desktop components
-// - Synchronizes content between views when needed
+// - Manages responsive layout changes
 // - Handles responsive breakpoints
 // - Provides comprehensive debug logging
 
 import { Controller } from "@hotwired/stimulus"
 
 export default class extends Controller {
-  static targets = ["mobilePatent", "desktopPatent", "mobileChat", "desktopChat"]
+  static targets = ["patentForm", "chatContainer"]
   
   connect() {
     console.debug("[ResponsiveLayoutController] Connected")
@@ -41,41 +40,44 @@ export default class extends Controller {
     const isMobile = window.innerWidth < 768 // Bootstrap md breakpoint
     
     console.debug("[ResponsiveLayoutController] Handling responsive display", {
-      isMobile: isMobile,
-      windowWidth: window.innerWidth,
+      screenWidth: window.innerWidth,
+      isMobileView: isMobile,
       timestamp: new Date().toISOString()
     })
     
-    // Ensure only the appropriate content is visible
-    if (this.hasMobilePatentTarget && this.hasDesktopPatentTarget) {
-      this.syncPatentContent(isMobile)
+    // Apply any responsive adjustments if needed
+    if (this.hasPatentFormTarget) {
+      this.adjustPatentForm(isMobile)
     }
     
-    if (this.hasMobileChatTarget && this.hasDesktopChatTarget) {
-      this.syncChatContent(isMobile)
+    if (this.hasChatContainerTarget) {
+      this.adjustChatContainer(isMobile)
     }
   }
   
-  syncPatentContent(isMobile) {
-    // Ensure form data is synchronized between views
-    console.debug("[ResponsiveLayoutController] Syncing patent content", {
-      isMobile: isMobile,
+  adjustPatentForm(isMobile) {
+    // Apply any responsive adjustments to the patent form
+    console.debug("[ResponsiveLayoutController] Adjusting patent form layout", {
+      isMobileView: isMobile,
       timestamp: new Date().toISOString()
     })
     
-    // We don't need to do anything special here since Turbo handles the form data
-    // Just ensuring the controller is aware of the state
+    // No specific adjustments needed as CSS handles most of the responsive behavior
+    // This method exists for potential future enhancements
   }
   
-  syncChatContent(isMobile) {
-    // Ensure chat messages are synchronized between views
-    console.debug("[ResponsiveLayoutController] Syncing chat content", {
-      isMobile: isMobile,
+  adjustChatContainer(isMobile) {
+    // Apply any responsive adjustments to the chat container
+    console.debug("[ResponsiveLayoutController] Adjusting chat container layout", {
+      isMobileView: isMobile,
       timestamp: new Date().toISOString()
     })
     
-    // We don't need to do anything special here since the server handles the chat state
-    // Just ensuring the controller is aware of the state
+    // Ensure chat messages container scrolls to bottom when layout changes
+    const chatMessages = document.getElementById('chat_messages')
+    if (chatMessages) {
+      chatMessages.scrollTop = chatMessages.scrollHeight
+    }
   }
   
   disconnect() {

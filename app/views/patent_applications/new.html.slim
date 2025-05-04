@@ -20,10 +20,10 @@
 - content_for :chat_form do
   = render "chat_form", patent_application: @patent_application
 
-/ Full-height container with modern styling - mobile-first approach
+/ Full-height container with modern styling and responsive layout
 .patent-application-container.d-flex.flex-column style="height: 100vh; max-height: 100vh;"
   / Debug logging
-  - logger.debug "Rendering patent application container with mobile-first approach"
+  - logger.debug "Rendering patent application container with responsive layout"
   
   / Modern, minimal header with subtle gradient - responsive for all devices
   header.py-2.py-md-3.px-3.px-md-4.border-bottom style="background: linear-gradient(to right, var(--primary-light), #f8f9fa);"
@@ -33,7 +33,7 @@
           i.bi.bi-lightbulb.me-2 style="color: var(--primary-color);"
           | RightsTree Patent Assistant
         
-        / Optional navigation or user controls - simplified on mobile
+        / Optional navigation or user controls
         .nav-controls
           button.btn.btn-sm.btn-outline-primary.rounded-pill.d-none.d-sm-inline-flex
             i.bi.bi-question-circle.me-1
@@ -41,7 +41,7 @@
           button.btn.btn-sm.btn-outline-primary.rounded-circle.d-inline-flex.d-sm-none
             i.bi.bi-question-circle
   
-  / Mobile tabs for switching between patent details and chat - only visible on mobile
+  / Tabs for switching between patent details and chat on smaller screens
   .d-flex.d-md-none.border-bottom.bg-white
     button.flex-grow-1.py-2.px-3.border-0.bg-transparent.text-center.fw-medium.active#patent-tab data-bs-toggle="tab" data-bs-target="#patent-content" type="button" role="tab" aria-controls="patent-content" aria-selected="true"
       i.bi.bi-file-earmark-text.me-2
@@ -50,12 +50,12 @@
       i.bi.bi-chat.me-2
       | AI Chat
   
-  / Main content area - mobile-first with tabs on small screens, side-by-side on larger screens
+  / Main content area - responsive layout with tabs on small screens, side-by-side on larger screens
   .flex-grow-1.d-flex.flex-column.flex-md-row.overflow-hidden style="background-color: var(--surface-alt-color);"
     / ==================== MOBILE TABS CONTENT ====================
-    / Only visible on mobile devices
+    / Visible on smaller screens
     .tab-content.d-md-none.w-100.flex-grow-1.overflow-auto
-      / Patent details tab - mobile view
+      / Patent details tab - smaller screens
       #patent-content.tab-pane.fade.show.active role="tabpanel" aria-labelledby="patent-tab"
         .p-3
           / Problem and solution form in a card
@@ -70,7 +70,7 @@
           
           / AI suggestions removed as requested
       
-      / Chat tab - mobile view
+      / Chat tab - smaller screens
       #chat-content.tab-pane.fade role="tabpanel" aria-labelledby="chat-tab"
         .chat-container.d-flex.flex-column.h-100
           .chat-main-container.bg-white.d-flex.flex-column.flex-grow-1.overflow-hidden style="max-height: calc(100vh - 150px);"
@@ -79,8 +79,8 @@
               p.text-secondary.mb-0.small
                 | Chat with the AI to define your patent
             
-            / Chat messages container - mobile optimized
-            #mobile_chat_messages.chat-messages.p-2.p-sm-3.overflow-auto.flex-grow-1 style="background-color: var(--background-color); max-height: calc(100vh - 180px);"
+            / Chat messages container
+            #chat_messages.chat-messages.p-2.p-sm-3.overflow-auto.flex-grow-1 style="background-color: var(--background-color); max-height: calc(100vh - 180px);"
               / Initial welcome message
               .message.ai-message.mb-3
                 .d-flex
@@ -91,14 +91,14 @@
                     p.mb-1.small Hello! I'm your AI patent assistant. I'll help you define a clear technical problem and solution.
                     p.mb-0.small What technical area are you interested in?
             
-            / Chat input form - mobile optimized
+            / Chat input form
             .chat-input-container.p-2.border-top style="background-color: var(--background-color);"
               = yield :chat_form
     
     / ==================== DESKTOP LAYOUT ====================
-    / Only visible on desktop - side by side with patent details on left, chat on right
+    / Visible on larger screens - side by side with patent details on left, chat on right
     
-    / Left sidebar with patent details - only visible on desktop
+    / Left sidebar with patent details - visible on larger screens
     .sidebar.d-none.d-md-flex.flex-column style="width: 380px; background-color: var(--surface-alt-color); margin-right: var(--spacing-md);"
       .p-3
         / Problem and solution form in a card
@@ -113,7 +113,7 @@
         
         / AI suggestions removed as requested
     
-    / Main chat column - Grok style - on the right side for desktop - only visible on desktop
+    / Main chat column - Grok style - on the right side for larger screens
     .chat-container.d-none.d-md-flex.flex-column.flex-grow-1.p-3 style="max-height: calc(100vh - 60px);"
       .chat-main-container.bg-white.rounded-3.shadow-sm.d-flex.flex-column.flex-grow-1.overflow-hidden
         / Subtle chat header
@@ -122,7 +122,7 @@
             | Chat with the AI to define your patent's problem and solution
         
         / Chat messages container with scrollable area - takes all available space
-        #desktop_chat_messages.chat-messages.p-3.p-md-4.overflow-auto.flex-grow-1 style="background-color: var(--background-color); max-height: calc(100vh - 200px);"
+        #chat_messages.chat-messages.p-3.p-md-4.overflow-auto.flex-grow-1 style="background-color: var(--background-color); max-height: calc(100vh - 200px);"
           / Initial welcome message
           .message.ai-message.mb-4
             .d-flex
