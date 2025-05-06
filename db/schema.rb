@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2025_05_03_221827) do
+ActiveRecord::Schema[8.0].define(version: 2025_05_06_223448) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -22,7 +22,7 @@ ActiveRecord::Schema[8.0].define(version: 2025_05_03_221827) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "status", default: "draft"
-    t.string "title", null: false
+    t.string "title", comment: "Optional in draft status, required when finalizing"
     t.index ["status"], name: "index_patent_applications_on_status"
     t.index ["user_id", "title"], name: "index_patent_applications_on_user_id_and_title", unique: true
     t.index ["user_id"], name: "index_patent_applications_on_user_id"
