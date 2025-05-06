@@ -21,14 +21,12 @@ class PatentApplication < ApplicationRecord
   # Set default status to draft
   attribute :status, :string, default: STATUSES[:draft]
 
-  # Always require a title
-  validates :title, presence: true
+  # Title must be unique within the context of a user (if present)
+  validates :title, uniqueness: { scope: :user_id, message: "must be unique for this user" }, allow_blank: true
 
-  # Title must be unique within the context of a user
-  validates :title, uniqueness: { scope: :user_id, message: "must be unique for this user" }
-
-  # Conditional validations based on status
-  with_options if: :publishing_or_published? do
+  # Require all fields when transitioning out of draft status
+  with_options if: :publishing_or_complete? do
+    validates :title, presence: true
     validates :problem, presence: true
     validates :solution, presence: true
   end
@@ -87,6 +85,10 @@ class PatentApplication < ApplicationRecord
   end
 
   def publishing_or_published?
+    status.to_s == STATUSES[:complete] || status.to_s == STATUSES[:published]
+  end
+
+  def publishing_or_complete?
     status.to_s == STATUSES[:complete] || status.to_s == STATUSES[:published]
   end
 

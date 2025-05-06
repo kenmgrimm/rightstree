@@ -13,7 +13,12 @@
       - if @patent_application.title.present?
         h1 = @patent_application.title
       - else
-        h1.text-muted Untitled Patent Application
+        h1.text-muted
+          | Untitled Patent Application
+          small.ms-2
+            = link_to edit_patent_application_path(@patent_application), class: "text-primary text-decoration-none" do
+              i.bi.bi-pencil-square.small
+              span.ms-1.small Set title
       p.text-muted.small Patent Application ##{@patent_application.id}
     = link_to "Edit", edit_patent_application_path(@patent_application), class: "btn btn-outline-primary"
   

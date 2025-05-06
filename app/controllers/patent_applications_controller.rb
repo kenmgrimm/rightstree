@@ -52,22 +52,19 @@ class PatentApplicationsController < ApplicationController
   end
 
   # GET /patent_applications/create_stub
-  # Creates a stub patent application and redirects to the set_title page
-  # This ensures we're always working with a persisted record and have a title before proceeding
+  # Creates a new patent application without a title and redirects to the edit page
+  # The title can remain unset until transitioning out of draft status
   def create_stub
-    Rails.logger.debug("[PatentApplicationsController#create_stub] Creating stub patent application")
+    Rails.logger.debug("[PatentApplicationsController#create_stub] Creating new patent application")
 
-    # Create a new patent application with a temporary title to satisfy the database constraint
-    # We'll force the user to set a real title before proceeding
-    Rails.logger.debug("[PatentApplicationsController#create_stub] Creating application with temporary title")
-
-    @patent_application = PatentApplication.new(title: "[Temporary Title #{Time.now.to_i}]")
-    @patent_application.save(validate: false)
-
-    if @patent_application.persisted?
-      Rails.logger.debug("[PatentApplicationsController#create_stub] Created stub patent application: #{@patent_application.id} with temporary title")
-      # Redirect to set_title path to ensure we have a proper title before proceeding
-      redirect_to set_title_patent_application_path(@patent_application)
+    # Create a new patent application without a title
+    # The user can set a title whenever they want
+    @patent_application = PatentApplication.new
+    
+    if @patent_application.save
+      Rails.logger.debug("[PatentApplicationsController#create_stub] Created new patent application: #{@patent_application.id}")
+      # Redirect directly to edit page
+      redirect_to edit_patent_application_path(@patent_application)
     else
       Rails.logger.error("[PatentApplicationsController#create_stub] Failed to create patent application: #{@patent_application.errors.full_messages.join(', ')}")
       # Fallback to the home page with an error message
@@ -141,12 +138,10 @@ class PatentApplicationsController < ApplicationController
   def show
     Rails.logger.debug("[PatentApplicationsController#show] Showing patent application: #{@patent_application.id}")
 
-    # Check if the patent application has a proper title
-    # If it has a temporary title, redirect to the set_title page
+    # Allow patent application to be viewed even without a proper title
+    # Just log that the title is temporary or missing
     if @patent_application.title.blank? || @patent_application.title.start_with?("[Temporary Title")
-      Rails.logger.debug("[PatentApplicationsController#show] Patent application does not have a proper title, redirecting to set_title")
-      redirect_to set_title_patent_application_path(@patent_application), alert: "Please set a title for your patent application before proceeding."
-      nil
+      Rails.logger.debug("[PatentApplicationsController#show] Patent application does not have a proper title, but proceeding anyway")
     end
   end
 
@@ -155,12 +150,10 @@ class PatentApplicationsController < ApplicationController
   def edit
     Rails.logger.debug("[PatentApplicationsController#edit] Editing patent application: #{@patent_application.id}")
 
-    # Check if the patent application has a proper title
-    # If it has a temporary title, redirect to the set_title page
+    # Allow patent application to be edited even without a proper title
+    # Just log that the title is temporary or missing
     if @patent_application.title.blank? || @patent_application.title.start_with?("[Temporary Title")
-      Rails.logger.debug("[PatentApplicationsController#edit] Patent application does not have a proper title, redirecting to set_title")
-      redirect_to set_title_patent_application_path(@patent_application), alert: "Please set a title for your patent application before proceeding."
-      return
+      Rails.logger.debug("[PatentApplicationsController#edit] Patent application does not have a proper title, but proceeding anyway")
     end
 
     Rails.logger.debug("[PatentApplicationsController#edit] Chat history size: #{@patent_application.chat_history&.size || 0}")
@@ -217,21 +210,10 @@ class PatentApplicationsController < ApplicationController
     @patent_application = PatentApplication.find(params[:id])
     Rails.logger.debug("[PatentApplicationsController#chat] Using patent application: #{@patent_application.id}")
 
-    # Check if the patent application has a proper title
-    # If it has a temporary title, redirect to the set_title page
+    # Allow chat even without a proper title
+    # Just log that the title is temporary or missing
     if @patent_application.title.blank? || @patent_application.title.start_with?("[Temporary Title")
-      Rails.logger.debug("[PatentApplicationsController#chat] Patent application does not have a proper title, redirecting to set_title")
-      respond_to do |format|
-        format.html { redirect_to set_title_patent_application_path(@patent_application), alert: "Please set a title for your patent application before proceeding." }
-        format.turbo_stream {
-          render turbo_stream: turbo_stream.replace(
-            "flash",
-            partial: "shared/flash",
-            locals: { flash: { alert: "Please set a title for your patent application before proceeding." } }
-          )
-        }
-      end
-      return
+      Rails.logger.debug("[PatentApplicationsController#chat] Patent application does not have a proper title, but proceeding anyway")
     end
 
     # Update problem/solution if provided but not already set

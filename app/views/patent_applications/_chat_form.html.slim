@@ -29,7 +29,7 @@
                     class: "form-control border-0 rounded-pill", 
                     placeholder: "Message the AI assistant...",
                     rows: 1,
-                    style: "resize: none; overflow: hidden; padding-right: 60px; font-size: 15px; box-shadow: none;",
+                    style: "resize: none; overflow: hidden; padding-right: 40px; font-size: 15px; box-shadow: none;",
                     data: { chat_form_target: "messageInput", action: "keydown->chat-form#handleKeydown input->chat-form#adjustHeight focus->chat-form#handleFocus blur->chat-form#handleBlur" }
     
     / Include the current problem and solution as hidden fields if they exist
@@ -39,10 +39,10 @@
       = form.hidden_field :solution, value: patent_application.solution
     
     / Send button with modern styling
-    button.btn.rounded-circle.position-absolute.d-flex.justify-content-center.align-items-center type="submit" style="right: 6px; bottom: 6px; width: 36px; height: 36px; background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); border: none; transition: transform 0.2s ease;" data-chat-form-target="submitButton"
+    button.btn.rounded-circle.position-absolute.d-flex.justify-content-center.align-items-center type="submit" style="right: 4px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; background: linear-gradient(135deg, var(--primary-color), var(--accent-color)); border: none; transition: all 0.2s ease; padding: 0;" data-chat-form-target="submitButton"
       / Show either the send icon or spinner
       span.d-flex.justify-content-center.align-items-center data-chat-form-target="buttonText"
-        i.bi.bi-send-fill.text-white style="font-size: 1rem;" 
+        i.bi.bi-send-fill.text-white style="font-size: 0.85rem;" 
       span.spinner-border.spinner-border-sm.text-white.d-none.position-absolute.top-50.start-50.translate-middle data-chat-form-target="spinner" role="status" aria-hidden="true"
   
   / Helper text and keyboard shortcuts

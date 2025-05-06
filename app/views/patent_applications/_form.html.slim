@@ -22,14 +22,14 @@
         - patent_application.errors.each do |error|
           li = error.full_message
           
-  / Title field - required and unique per user
+  / Title field - marked as required in UI but can be blank in database
   .mb-4
     .d-flex.justify-content-between.align-items-center.mb-2
       = form.label :title, "Patent Title", class: "form-label fw-semibold mb-0"
       span.badge.bg-light.text-secondary.border Required
     = form.text_field :title, 
                     class: "form-control border", 
-                    placeholder: "Enter a unique title for your patent application", 
+                    placeholder: "Enter a title for your patent application", 
                     required: true,
                     data: { patent_form_target: "title", action: "input->patent-form#handleFieldInput input->patent-form#validateTitle" }
     .form-text.small.text-muted
@@ -47,6 +47,7 @@
                     rows: 5, 
                     style: "border-radius: 12px; resize: vertical; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;",
                     placeholder: "Describe the technical problem you're solving", 
+                    required: true,
                     data: { patent_form_target: "problem", action: "input->patent-form#handleFieldInput focus->patent-form#handleFieldFocus blur->patent-form#handleFieldBlur" }
     .form-text.text-muted.mt-2
       i.bi.bi-info-circle.me-1
@@ -56,12 +57,13 @@
   .mb-4
     .d-flex.justify-content-between.align-items-center.mb-2
       = form.label :solution, "Technical Solution", class: "form-label fw-semibold mb-0"
-      span.badge.bg-light.text-secondary.border Optional
+      span.badge.bg-light.text-secondary.border Required
     = form.text_area :solution, 
                     class: "form-control border", 
                     rows: 6, 
                     style: "border-radius: 12px; resize: vertical; transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;",
                     placeholder: "Describe your proposed solution to the problem...",
+                    required: true,
                     data: { patent_form_target: "solution", action: "input->patent-form#handleFieldInput focus->patent-form#handleFieldFocus blur->patent-form#handleFieldBlur" }
     .form-text.text-muted.mt-2
       i.bi.bi-info-circle.me-1

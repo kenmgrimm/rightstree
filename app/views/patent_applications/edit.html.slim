@@ -8,19 +8,21 @@
 / Uses Turbo Frames for dynamic updates and Stimulus for interactivity
 
 .patent-application-container
-  - if !@patent_application.title.present? || @patent_application.title == "New Patent Application"
+  - if !@patent_application.title.present?
     .alert.alert-info.mb-4
       .d-flex.align-items-center
         i.bi.bi-info-circle.me-3.fs-3
         div
-          p.mb-0 A title will be automatically generated based on your problem statement, or you can provide your own.
+          p.mb-0 You can set a title for your patent application now, or leave it for later. A title will be required when finalizing your application.
   
   .d-flex.justify-content-between.align-items-center.mb-4
     div
-      - if @patent_application.title.present? && @patent_application.title != "New Patent Application"
+      - if @patent_application.title.present?
         h1 Edit: #{@patent_application.title}
       - else
-        h1 New Patent Application
+        h1 
+          | New Patent Application
+          small.ms-2.text-muted.fw-normal (Optional)
     = link_to "View Application", patent_application_path(@patent_application), class: "btn btn-outline-secondary"
   
   .row
