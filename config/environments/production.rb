@@ -26,10 +26,6 @@ Rails.application.configure do
   
   # Compile assets
   config.assets.compile = true
-  
-  # Add debug logging for asset configuration
-  Rails.logger.debug "[Assets Debug] Public file server enabled: #{config.public_file_server.enabled}"
-  Rails.logger.debug "[Assets Debug] Assets compile enabled: #{config.assets.compile}"
 
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local

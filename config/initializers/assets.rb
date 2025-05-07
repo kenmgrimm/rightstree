@@ -14,6 +14,3 @@ Rails.application.config.assets.precompile += %w( *.png *.jpg *.jpeg *.gif *.svg
 
 # Enable serving of static assets in production
 Rails.application.config.public_file_server.enabled = true
-
-# Add debug logging for asset paths
-Rails.logger.debug "[Assets Debug] Asset paths: #{Rails.application.config.assets.paths.inspect}"
