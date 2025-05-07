@@ -20,11 +20,11 @@ Rails.application.configure do
 
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
   # config.asset_host = "http://assets.example.com"
-  
-  # Explicitly enable serving of static assets
+
+  # Enable serving of static assets
   config.public_file_server.enabled = true
   
-  # Compile assets
+  # Enable asset compilation in production (not recommended for performance, but needed for our demo)
   config.assets.compile = true
 
   # Store uploaded files on the local file system (see config/storage.yml for options).
