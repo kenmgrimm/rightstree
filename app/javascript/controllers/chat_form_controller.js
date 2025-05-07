@@ -42,8 +42,15 @@ export default class extends Controller {
     
     console.debug("[ChatFormController] Submit start - adding message and loading indicator");
     
+    // Store the message for display
+    const messageToDisplay = message;
+    
+    // Clear the input field immediately
+    this.messageInputTarget.value = "";
+    this.adjustHeight();
+    
     // Add user message to chat
-    this.addUserMessage(message);
+    this.addUserMessage(messageToDisplay);
     
     // Add loading indicator
     this.addLoadingIndicator();
@@ -61,9 +68,7 @@ export default class extends Controller {
     // Remove loading indicator
     this.removeLoadingIndicator();
     
-    // Reset form
-    this.messageInputTarget.value = "";
-    this.adjustHeight();
+    // Focus the input field (we already cleared it at the start)
     this.messageInputTarget.focus();
     
     // Reset loading state

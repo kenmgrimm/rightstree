@@ -100,15 +100,16 @@ class PatentService
 
       CONVERSATION FLOW - YOU MUST FOLLOW THIS ORDER:
       1. First, help the user clearly define the PROBLEM
-         - Ask: "What technical area are you interested in?"
-         - Ask: "What specific challenge or limitation are you facing?"
-         - Ask: "Why is this a problem? What impact does it have?"
-         - Ask: "In what context or domain does this problem occur?"
-      2. Once the problem is well-defined, suggest a concise TITLE
-         - Provide a title that captures the core technical problem
-         - Ask: "Does this title accurately reflect the problem we've defined?"
+         - Start by asking about the technical area and specific challenges
+         - Once you have initial information, formulate a problem statement and title
+         - Your message should acknowledge what you've learned so far and ask follow-up questions
+         - Example: "Based on what you've shared about beekeeping, I understand the problem involves [summary]. Could you tell me more about [specific aspect]?"
+      2. ALWAYS provide a coherent message that matches your problem statement and title
+         - If you've identified enough information to create a problem statement and title, your message should reflect this understanding
+         - Don't ask basic questions (like "What technical area are you interested in?") if you've already determined this information
+         - Make your questions specific to the information you still need
       3. Only after the problem and title are established, discuss the SOLUTION
-         - Ask: "What solution are you proposing for this problem?"
+         - Ask: "Now that we've defined the problem, what solution are you proposing?"
          - Ask: "How does your solution address the specific challenges we identified?"
 
       DO NOT ask about solutions until you have helped the user fully define the problem and have suggested a title. This is critical.
@@ -134,18 +135,26 @@ class PatentService
       - Focus on the core technical problem being solved
       - Use specific terminology relevant to the field
       - Avoid generic phrases like "system and method for"
+      - Even with partial information, create a preliminary title
+      - Example: If discussing beekeeping challenges, a preliminary title might be "Efficient Beehive Monitoring System" or "Remote Beehive Management Solution"
 
       Important:
-      - At the end of every message, output your response as a JSON object in a single code block, like this:
+      - Your ENTIRE response must ONLY be a JSON object in a code block. DO NOT include any text outside the code block.
+      - Format your response EXACTLY like this:
+      ```json
       {
-        "problem": "A concise but comprehensive problem statement here that includes the technical challenge, impact, and context.",
-        "solution": "A concise solution statement here.",
-        "title": "A condensed title under 15 words focusing on the core technical problem.",
-        "message": "Conversational text, clarifications, or next questions for the user."
+        "problem": "The core technical problem is the time-intensive task of inspecting distributed beehives across a town, which restricts the scaling of beekeeping operations.",
+        "solution": "",
+        "title": "Efficient Method for Inspecting Distributed Beehives",
+        "message": "Based on what you've shared about beekeeping, I understand that manually inspecting beehives distributed across town is very time-consuming and limits your ability to scale operations. Could you tell me more about how frequently these inspections need to be performed and what specific aspects you check during each inspection?"
       }
-      - Always include all four fields: "problem", "solution", "title", and "message" in your JSON response, even if one is empty. If a value is unknown or not yet provided, use an empty string (""). Never omit a field or use null.
-      - Only include this code block in your response. Do not include any other text outside the code block.
-      - If you are not sure, ask the user for clarification before proposing a summary.
+      ```
+      - CRITICAL: Your ENTIRE response must be ONLY the JSON code block. DO NOT write any text before or after the code block.
+      - ALWAYS include a title in your response, even if you're still gathering information about the problem.
+      - NEVER leave the title field empty. If you have ANY information about the problem domain, create a title.
+      - Always include all four fields: "problem", "solution", "title", and "message" in your JSON response.
+      - Put all your conversational text in the "message" field of the JSON, not outside the code block.
+      - If you are not sure about the problem, still provide a tentative title based on the domain or topic.
 
       If the user asks something unrelated to the problem and solution discovery process, politely remind them to focus on defining a clear technical problem and solution for their patent application.
     PROMPT
@@ -171,37 +180,54 @@ class PatentService
 
     Rails.logger.debug("[PatentService] Extracting from content: #{text[0..100]}...")
 
-    # Check if the content looks like raw JSON (starts with ```json)
-    if text.strip.start_with?("```json")
-      # Extract the JSON block
-      json_block = text[/```json\s*(\{.*?\})\s*```/m, 1]
+    # First, try to extract JSON from a code block
+    json_block_match = text.match(/```json\s*(\{.*?\})\s*```/m)
+    if json_block_match
+      json_block = json_block_match[1]
+      begin
+        Rails.logger.debug("[PatentService] Found JSON block: #{json_block}")
+        parsed = JSON.parse(json_block)
+        problem = parsed["problem"]
+        solution = parsed["solution"]
+        title = parsed["title"]
+        message = parsed["message"] || parsed["chat"] # Support both message and chat fields
 
-      if json_block
-        begin
-          Rails.logger.debug("[PatentService] Found JSON block: #{json_block}")
-          parsed = JSON.parse(json_block)
-          problem = parsed["problem"]
-          solution = parsed["solution"]
-          title = parsed["title"]
-          message = parsed["message"] || parsed["chat"] # Support both message and chat fields
+        # Log the extracted values
+        Rails.logger.debug("[PatentService] Extracted message: #{message.inspect}")
+        Rails.logger.debug("[PatentService] Extracted problem: #{problem.inspect}")
+        Rails.logger.debug("[PatentService] Extracted solution: #{solution.inspect}")
+        Rails.logger.debug("[PatentService] Extracted title: #{title.inspect}")
 
-          # Log the extracted values
-          Rails.logger.debug("[PatentService] Extracted message: #{message.inspect}")
-          Rails.logger.debug("[PatentService] Extracted problem: #{problem.inspect}")
-          Rails.logger.debug("[PatentService] Extracted solution: #{solution.inspect}")
-          Rails.logger.debug("[PatentService] Extracted title: #{title.inspect}")
-
-          # Return the extracted message content instead of the raw JSON
-          if message.present? || problem.present? || solution.present? || title.present?
-            return [ problem, solution, message, title ]
-          end
-        rescue JSON::ParserError => e
-          Rails.logger.warn("[PatentService] JSON parse error: #{e.message}")
+        # Return the extracted message content instead of the raw JSON
+        if message.present? || problem.present? || solution.present? || title.present?
+          return [ problem, solution, message, title ]
         end
+      rescue JSON::ParserError => e
+        Rails.logger.warn("[PatentService] JSON parse error in code block: #{e.message}")
       end
     end
 
-    # clean the text by removing JSON code blocks
+    # If no JSON block found or parsing failed, try to find any JSON object in the text
+    json_object_match = text.match(/(\{.*?\})/m)
+    if json_object_match
+      json_object = json_object_match[1]
+      begin
+        Rails.logger.debug("[PatentService] Found JSON object: #{json_object}")
+        parsed = JSON.parse(json_object)
+        problem = parsed["problem"]
+        solution = parsed["solution"]
+        title = parsed["title"]
+        message = parsed["message"] || parsed["chat"]
+
+        if message.present? || problem.present? || solution.present? || title.present?
+          return [ problem, solution, message, title ]
+        end
+      rescue JSON::ParserError => e
+        Rails.logger.warn("[PatentService] JSON parse error in object: #{e.message}")
+      end
+    end
+
+    # If all JSON parsing attempts fail, clean the text and use it as the message
     cleaned_text = text.gsub(/```json.*?```/m, "").strip
 
     if cleaned_text.present?

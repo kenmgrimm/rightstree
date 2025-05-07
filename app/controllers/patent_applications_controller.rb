@@ -60,7 +60,7 @@ class PatentApplicationsController < ApplicationController
     # Create a new patent application without a title
     # The user can set a title whenever they want
     @patent_application = PatentApplication.new
-    
+
     if @patent_application.save
       Rails.logger.debug("[PatentApplicationsController#create_stub] Created new patent application: #{@patent_application.id}")
       # Redirect directly to edit page
@@ -89,15 +89,46 @@ class PatentApplicationsController < ApplicationController
   def update_title
     Rails.logger.debug("[PatentApplicationsController#update_title] Updating title for patent application: #{@patent_application.id}")
     Rails.logger.debug("[PatentApplicationsController#update_title] New title: #{params[:title]}")
+    Rails.logger.debug("[PatentApplicationsController#update_title] Current problem: #{@patent_application.problem}")
 
-    if @patent_application.update(title: params[:title])
-      Rails.logger.debug("[PatentApplicationsController#update_title] Successfully updated title")
+    # Preserve the current problem statement when updating the title
+    current_problem = @patent_application.problem
+
+    # Update both title and problem (to ensure problem is preserved)
+    if @patent_application.update(title: params[:title], problem: current_problem)
+      Rails.logger.debug("[PatentApplicationsController#update_title] Successfully updated title while preserving problem")
+
+      # Add a system message to the chat history indicating the title was accepted
+      add_title_acceptance_to_chat_history(params[:title])
+
       flash[:notice] = "Title was successfully set."
       redirect_to edit_patent_application_path(@patent_application)
     else
       Rails.logger.debug("[PatentApplicationsController#update_title] Failed to update title: #{@patent_application.errors.full_messages.join(', ')}")
       flash.now[:alert] = "Failed to set title: #{@patent_application.errors.full_messages.join(', ')}"
       render :set_title
+    end
+  end
+
+  # Helper method to add a title acceptance message to the chat history
+  def add_title_acceptance_to_chat_history(title_text)
+    Rails.logger.debug("[PatentApplicationsController#add_title_acceptance_to_chat_history] Adding title acceptance to chat history")
+
+    # Create a system message indicating the title was accepted
+    system_message = {
+      role: "system",
+      content: "Title accepted: #{title_text}",
+      timestamp: Time.current.to_i
+    }
+
+    # Add the message to chat history
+    @patent_application.chat_history << system_message
+
+    # Save the updated chat history
+    if @patent_application.save
+      Rails.logger.debug("[PatentApplicationsController#add_title_acceptance_to_chat_history] Successfully saved chat history with title acceptance")
+    else
+      Rails.logger.error("[PatentApplicationsController#add_title_acceptance_to_chat_history] Failed to save chat history: #{@patent_application.errors.full_messages.join(', ')}")
     end
   end
 
@@ -333,30 +364,53 @@ class PatentApplicationsController < ApplicationController
     Rails.logger.debug("[PatentApplicationsController#chat] Extracted chat content: #{extracted_chat.inspect}")
     Rails.logger.debug("[PatentApplicationsController#chat] Using display_content: #{display_content.inspect}")
 
-    # Extract problem and solution from the AI response
-    problem, solution, message_text = extract_problem_solution_message(display_content)
+    # Use the suggested problem, solution, and title directly from the PatentService result
+    problem = suggested_problem
+    solution = suggested_solution
+    title = suggested_title
 
     # Log the extracted values
-    Rails.logger.debug("[PatentApplicationsController#chat] Extracted problem: #{problem.inspect}") if Rails.env.development?
-    Rails.logger.debug("[PatentApplicationsController#chat] Extracted solution: #{solution.inspect}") if Rails.env.development?
-    Rails.logger.debug("[PatentApplicationsController#chat] Extracted message text: #{message_text.inspect}") if Rails.env.development?
+    Rails.logger.debug("[PatentApplicationsController#chat] Using problem from result: #{problem.inspect}") if Rails.env.development?
+    Rails.logger.debug("[PatentApplicationsController#chat] Using solution from result: #{solution.inspect}") if Rails.env.development?
+    Rails.logger.debug("[PatentApplicationsController#chat] Using title from result: #{title.inspect}") if Rails.env.development?
+
+    # Extract message text from the JSON response
+    message_text = nil
+    begin
+      if ai_message.present? && ai_message.include?("```json")
+        json_block = ai_message[/```json\s*(\{.*?\})\s*```/m, 1]
+        if json_block.present?
+          parsed = JSON.parse(json_block)
+          message_text = parsed["message"]
+          Rails.logger.debug("[PatentApplicationsController#chat] Extracted message from JSON: #{message_text.inspect}") if Rails.env.development?
+        end
+      end
+    rescue => e
+      Rails.logger.error("[PatentApplicationsController#chat] Error extracting message from JSON: #{e.message}")
+    end
+
+    # If we couldn't extract the message text, use the display_content
+    message_text ||= display_content
 
     # Add AI response to chat history with proper content for display
     if ai_message.present?
       # Create a standardized AI response message using the new format
-      # Pass the extracted values directly to standardize_message to avoid nesting
       ai_response = standardize_message({
         role: "assistant",
-        content: message_text || display_content,
+        content: message_text,
         problem: problem || "",
         solution: solution || "",
+        title: title || "",
         patent_application_id: @patent_application.id
       })
+
+      # Log the AI response with title
+      Rails.logger.debug("[PatentApplicationsController#chat] AI response with title: #{ai_response.inspect}") if Rails.env.development?
 
       # Add comprehensive debug logging
       Rails.logger.debug("[PatentApplicationsController#chat] Storing AI response with standardized format") if Rails.env.development?
 
-      # Add the message to chat history
+      # Add the message to chat history (and ensure we don't add duplicate messages)
       @patent_application.chat_history << ai_response
 
       # Save the updated chat history
@@ -444,6 +498,9 @@ class PatentApplicationsController < ApplicationController
       Rails.logger.debug("[PatentApplicationsController#update_problem] Using AI-suggested title: #{ai_title}")
     end
 
+    # Log the current problem for debugging
+    Rails.logger.debug("[PatentApplicationsController#update_problem] Current problem: #{@patent_application.problem}")
+
     # Determine which title to use
     if @patent_application.title.blank? || @patent_application.title.empty?
       # If we have an AI-suggested title, use it
@@ -462,6 +519,9 @@ class PatentApplicationsController < ApplicationController
         if @patent_application.update(problem: problem_text, title: title)
           Rails.logger.debug("[PatentApplicationsController#update_problem] Successfully updated problem and title")
           flash[:notice] = "Problem statement updated and title generated."
+
+          # Add a system message to the chat history indicating the problem was accepted
+          add_problem_acceptance_to_chat_history(problem_text)
         else
           Rails.logger.debug("[PatentApplicationsController#update_problem] Failed to update problem and title: #{@patent_application.errors.full_messages.join(', ')}")
           flash[:alert] = "Failed to update problem: #{@patent_application.errors.full_messages.join(', ')}"
@@ -471,6 +531,9 @@ class PatentApplicationsController < ApplicationController
         if @patent_application.update(problem: problem_text)
           Rails.logger.debug("[PatentApplicationsController#update_problem] Successfully updated problem")
           flash[:notice] = "Problem statement updated."
+
+          # Add a system message to the chat history indicating the problem was accepted
+          add_problem_acceptance_to_chat_history(problem_text)
         else
           Rails.logger.debug("[PatentApplicationsController#update_problem] Failed to update problem: #{@patent_application.errors.full_messages.join(', ')}")
           flash[:alert] = "Failed to update problem: #{@patent_application.errors.full_messages.join(', ')}"
@@ -481,6 +544,9 @@ class PatentApplicationsController < ApplicationController
       if @patent_application.update(problem: problem_text)
         Rails.logger.debug("[PatentApplicationsController#update_problem] Successfully updated problem")
         flash[:notice] = "Problem statement updated."
+
+        # Add a system message to the chat history indicating the problem was accepted
+        add_problem_acceptance_to_chat_history(problem_text)
       else
         Rails.logger.debug("[PatentApplicationsController#update_problem] Failed to update problem: #{@patent_application.errors.full_messages.join(', ')}")
         flash[:alert] = "Failed to update problem: #{@patent_application.errors.full_messages.join(', ')}"
@@ -488,6 +554,28 @@ class PatentApplicationsController < ApplicationController
     end
 
     redirect_to edit_patent_application_path(@patent_application)
+  end
+
+  # Helper method to add a problem acceptance message to the chat history
+  def add_problem_acceptance_to_chat_history(problem_text)
+    Rails.logger.debug("[PatentApplicationsController#add_problem_acceptance_to_chat_history] Adding problem acceptance to chat history")
+
+    # Create a system message indicating the problem was accepted
+    system_message = {
+      role: "system",
+      content: "Problem statement accepted: #{problem_text}",
+      timestamp: Time.current.to_i
+    }
+
+    # Add the message to chat history
+    @patent_application.chat_history << system_message
+
+    # Save the updated chat history
+    if @patent_application.save
+      Rails.logger.debug("[PatentApplicationsController#add_problem_acceptance_to_chat_history] Successfully saved chat history with problem acceptance")
+    else
+      Rails.logger.error("[PatentApplicationsController#add_problem_acceptance_to_chat_history] Failed to save chat history: #{@patent_application.errors.full_messages.join(', ')}")
+    end
   end
 
   # Updates the solution with an AI suggestion
@@ -607,40 +695,28 @@ class PatentApplicationsController < ApplicationController
     redirect_to root_path, alert: "Patent application not found."
   end
 
-  # Standardize new messages for consistent format (without modifying old data)
-  # This ensures all new messages follow the standardized format:
-  # system: { role:, message:, timestamp: }
-  # user: { role:, message:, timestamp: }
-  # assistant: { role:, timestamp:, content: { problem:, solution:, message: } }
+  # Standardizes a message for storage in the chat history
   def standardize_message(message)
-    # Get current timestamp if not provided
+    # Ensure we have a timestamp
     timestamp = message[:timestamp] || message["timestamp"] || Time.current.to_i
+
+    # Ensure we have a patent_application_id
+    patent_application_id = message[:patent_application_id] || message["patent_application_id"] || @patent_application&.id
+
+    # Get the role
     role = message[:role] || message["role"]
-    patent_app_id = message[:patent_application_id] || message["patent_application_id"] || @patent_application&.id
 
-    # Create a standardized message based on role
-    case role
-    when "system", "user"
-      # For system and user messages, use the simple format with message
-      standardized = {
-        "role" => role,
-        "message" => message[:content] || message["content"] || "",
-        "timestamp" => timestamp,
-        "patent_application_id" => patent_app_id
-      }
-    when "assistant"
-      # For assistant messages, handle content and extract problem/solution
-      content = message[:content] || message["content"] || ""
-
-      # Get problem and solution directly from message or default to empty string
+    # For assistant messages, structure the content properly
+    if role == "assistant"
+      # Get content, which could be a string or a hash
+      content = message[:content] || message["content"]
       problem = message[:problem] || message["problem"] || ""
       solution = message[:solution] || message["solution"] || ""
+      title = message[:title] || message["title"] || ""
 
-      # If we have raw content that needs parsing and no problem/solution provided
-      if content.is_a?(String) && !problem.present? && !solution.present?
-        # Try to extract problem/solution from JSON if present
-        problem, solution, extracted_message = extract_problem_solution_message(content)
-        message_text = extracted_message || content
+      # If content is a hash, extract message from it
+      if content.is_a?(Hash)
+        message_text = content[:message] || content["message"] || ""
       elsif content.is_a?(Hash) && content["message"].present?
         # If content is already a hash with message field, extract it to avoid nesting
         message_text = content["message"]
@@ -658,10 +734,11 @@ class PatentApplicationsController < ApplicationController
       standardized = {
         "role" => "assistant",
         "timestamp" => timestamp,
-        "patent_application_id" => patent_app_id,
+        "patent_application_id" => patent_application_id,
         "content" => {
           "problem" => problem,
           "solution" => solution,
+          "title" => title,
           "message" => message_text
         }
       }
@@ -671,7 +748,7 @@ class PatentApplicationsController < ApplicationController
         "role" => role,
         "message" => message[:content] || message["content"] || "",
         "timestamp" => timestamp,
-        "patent_application_id" => patent_app_id
+        "patent_application_id" => patent_application_id
       }
     end
 
@@ -682,9 +759,9 @@ class PatentApplicationsController < ApplicationController
     standardized
   end
 
-  # Helper method to extract problem, solution, and message from content
+  # Helper method to extract problem, solution, title, and message from content
   def extract_problem_solution_message(content)
-    return [ "", "", content ] unless content.present?
+    return [ "", "", content, "" ] unless content.present?
 
     # Check if the content looks like JSON
     if content.include?("{")
@@ -706,13 +783,15 @@ class PatentApplicationsController < ApplicationController
           # Extract fields based on what's available
           problem = parsed["problem"] if parsed["problem"].present?
           solution = parsed["solution"] if parsed["solution"].present?
+          title = parsed["title"] if parsed["title"].present?
 
           # Look for message in different possible fields
           message = parsed["message"] || parsed["chat"] || ""
 
           # If we found structured data, return it
-          if problem || solution || message
-            return [ problem || "", solution || "", message ]
+          if problem || solution || message || title
+            Rails.logger.debug("[PatentApplicationsController#extract_problem_solution_message] Extracted title: #{title.inspect}")
+            return [ problem || "", solution || "", message, title || "" ]
           end
         rescue => e
           Rails.logger.error("[PatentApplicationsController#extract_problem_solution_message] JSON parsing error: #{e.message}")
@@ -721,7 +800,7 @@ class PatentApplicationsController < ApplicationController
     end
 
     # If we couldn't extract structured data, return the original content as the message
-    [ "", "", content.gsub(/```json|```/m, "").strip ]
+    [ "", "", content.gsub(/```json|```/m, "").strip, "" ]
   end
 
   # Permits the allowed parameters for creating/updating a patent application

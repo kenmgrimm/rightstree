@@ -21,8 +21,8 @@ class PatentApplication < ApplicationRecord
   # Set default status to draft
   attribute :status, :string, default: STATUSES[:draft]
 
-  # Title must be unique within the context of a user (if present)
-  validates :title, uniqueness: { scope: :user_id, message: "must be unique for this user" }, allow_blank: true
+  # Title no longer needs to be unique
+  # Removed uniqueness validation as per requirement
 
   # Require all fields when transitioning out of draft status
   with_options if: :publishing_or_complete? do

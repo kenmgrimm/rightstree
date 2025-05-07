@@ -22,33 +22,35 @@
 / Debug the message
 - Rails.logger.debug("[Message Partial] Processing message: role=#{role}, timestamp=#{timestamp}") if Rails.env.development?
 
-/ Skip system messages entirely
-- return if is_system
+/ Only display system messages that are acceptance messages
+- if is_system
+  - content = message['content'] || message[:content] || ""
+  - is_acceptance = content.to_s.start_with?("Problem statement accepted") || content.to_s.start_with?("Title accepted")
+  - return unless is_acceptance
 
 / Get the appropriate content based on role
+- message_text = ""
+- suggested_problem = ""
+- suggested_solution = ""
+- suggested_title = ""
+
 - if role == 'assistant'
   / For assistant messages, get content from the content hash
   - content_hash = message['content'] || message[:content] || {}
-  - content_hash = content_hash.is_a?(Hash) ? content_hash : {}
-  
-  / Handle nested message structure
-  - if content_hash['message'].is_a?(Hash)
-    - nested_message = content_hash['message']
-    - message_text = nested_message['message'] || ""
-    - suggested_problem = nested_message['problem'] || content_hash['problem'] || ""
-    - suggested_solution = nested_message['solution'] || content_hash['solution'] || ""
-    - Rails.logger.debug("[Message Partial] Found nested message structure") if Rails.env.development?
-  - else
+  - if content_hash.is_a?(Hash)
     - message_text = content_hash['message'] || content_hash[:message] || ""
     - suggested_problem = content_hash['problem'] || content_hash[:problem] || ""
     - suggested_solution = content_hash['solution'] || content_hash[:solution] || ""
-  
-  - Rails.logger.debug("[Message Partial] Assistant message: '#{message_text[0..50]}...', problem: #{suggested_problem.present?}, solution: #{suggested_solution.present?}") if Rails.env.development?
+    - suggested_title = content_hash['title'] || content_hash[:title] || ""
+  - else
+    - message_text = content_hash.to_s
+- elsif role == 'system'
+  / For system messages, content is directly in the content field
+  - message_text = message['content'] || message[:content] || ""
+  - Rails.logger.debug("[Message Partial] System message text: #{message_text}")
 - else
-  / For user and other messages, get content from the message field
-  - message_text = message['message'] || message[:message] || message['content'] || message[:content] || ""
-  - suggested_problem = nil
-  - suggested_solution = nil
+  / For user messages, content is directly in the message
+  - message_text = message['content'] || message[:content] || message['message'] || message[:message] || ""
   - Rails.logger.debug("[Message Partial] User/other message: '#{message_text[0..50]}...'") if Rails.env.development?
 
 / Skip empty messages
@@ -117,15 +119,19 @@
     - Rails.logger.error("[Message Partial] JSON processing error: #{e.message}") if Rails.env.development?
     - message_text = message_text.gsub(/```json|```/m, "").strip
 
-.message.mb-4.d-flex class="#{is_user ? 'user-message justify-content-end' : 'ai-message'}" id=message_id data-timestamp=timestamp
+.message.mb-4.d-flex class="#{is_user ? 'user-message justify-content-end' : (is_system ? 'system-message' : 'ai-message')}" id=message_id data-timestamp=timestamp
   / For AI messages, show avatar on the left
   - unless is_user
     .message-avatar.me-3.flex-shrink-0
-      .avatar.text-white.rounded-circle.d-flex.align-items-center.justify-content-center style="width: 38px; height: 38px; background: linear-gradient(135deg, var(--primary-color), var(--accent-color));"
-        i.bi.bi-robot
+      - if is_system
+        .avatar.text-white.rounded-circle.d-flex.align-items-center.justify-content-center style="width: 38px; height: 38px; background: linear-gradient(135deg, #28a745, #20c997);"
+          i.bi.bi-check-circle-fill
+      - else
+        .avatar.text-white.rounded-circle.d-flex.align-items-center.justify-content-center style="width: 38px; height: 38px; background: linear-gradient(135deg, var(--primary-color), var(--accent-color));"
+          i.bi.bi-robot
   
   / Message content with different styling based on sender
-  .message-content.p-3.rounded-3.shadow-sm class="#{is_user ? 'text-white' : ''}" style="max-width: 85%; #{is_user ? 'background-color: var(--primary-color);' : 'background-color: var(--surface-color);'}"
+  .message-content.p-3.rounded-3.shadow-sm class="#{is_user ? 'text-white' : ''}" style="max-width: 85%; #{is_user ? 'background-color: var(--primary-color);' : (is_system ? 'background-color: #d1e7dd; border: 1px solid #badbcc;' : 'background-color: var(--surface-color);')}"
     .message-body
       p.mb-1 style="#{is_user ? 'color: white;' : 'color: var(--text-primary);'}"
         / Inspect the message content for debugging
@@ -152,17 +158,73 @@
         - else
           / Otherwise, just display the message text as is
           = simple_format(message_text)
+        
+      / We'll only display the title in the suggestions area below, not here in the message content
+      - if !is_user && suggested_title.present?
+        - Rails.logger.debug("[Message Partial] Title will be displayed in suggestions area: #{suggested_title}")
       
-      / Display suggestion buttons if problem or solution is suggested
-      - if !is_user && (suggested_problem.present? || suggested_solution.present?)
+      / Display suggestion buttons if problem, solution, or title is suggested
+      - if !is_user && (suggested_problem.present? || suggested_solution.present? || suggested_title.present?)
         .suggestions.mt-3.border-top.pt-2
-          / Only show problem suggestion if the problem field is empty
+          / Get patent application details
           - patent_app_id = message[:patent_application_id] || message['patent_application_id'] || @patent_application&.id
           - patent_application = PatentApplication.find_by(id: patent_app_id) if patent_app_id.present?
+          - title_is_empty = patent_application.nil? || patent_application.title.blank?
           - problem_is_empty = patent_application.nil? || patent_application.problem.blank?
           - solution_is_empty = patent_application.nil? || patent_application.solution.blank?
           
-          - if suggested_problem.present? && problem_is_empty
+          / Get the message timestamp for comparing when suggestions were made vs when values were accepted
+          - message_timestamp = message[:timestamp] || message['timestamp'] || Time.current.to_i
+          - Rails.logger.debug("[Message Partial] Message timestamp: #{message_timestamp}")
+          
+          / Check if this is a system message indicating acceptance
+          - system_role_symbol = message[:role] == "system"
+          - system_role_string = message['role'] == "system"
+          - problem_accepted_symbol = message[:content].to_s.start_with?("Problem statement accepted") if system_role_symbol
+          - problem_accepted_string = message['content'].to_s.start_with?("Problem statement accepted") if system_role_string
+          - title_accepted_symbol = message[:content].to_s.start_with?("Title accepted") if system_role_symbol
+          - title_accepted_string = message['content'].to_s.start_with?("Title accepted") if system_role_string
+          - is_acceptance_message = (system_role_symbol && (problem_accepted_symbol || title_accepted_symbol)) || (system_role_string && (problem_accepted_string || title_accepted_string))
+          
+          / If this is an acceptance message, display the accepted value
+          - if is_acceptance_message
+            - content = message[:content] || message['content']
+            - if content.to_s.start_with?("Problem statement accepted: ")
+              .accepted-problem.mb-3.p-2.border.rounded.bg-success-subtle
+                p.small.fw-bold.mb-1
+                  i.bi.bi-check-circle-fill.me-1.text-success
+                  | Problem statement accepted:
+                p.small.fw-medium.mb-0 = content.to_s.gsub("Problem statement accepted: ", "")
+                - Rails.logger.debug("[Message Partial] Displaying accepted problem from system message")
+            - elsif content.to_s.start_with?("Title accepted: ")
+              .accepted-title.mb-3.p-2.border.rounded.bg-success-subtle
+                p.small.fw-bold.mb-1
+                  i.bi.bi-check-circle-fill.me-1.text-success
+                  | Title accepted:
+                p.small.fw-medium.mb-0 = content.to_s.gsub("Title accepted: ", "")
+                - Rails.logger.debug("[Message Partial] Displaying accepted title from system message")
+          
+          
+          / Only show title suggestion if the title field is empty and this message is not a system message
+          - if suggested_title.present? && title_is_empty && !is_acceptance_message
+            .suggested-title.mb-3.p-2.border.rounded.bg-light-subtle
+              p.small.fw-bold.mb-1
+                i.bi.bi-tag.me-1
+                | Suggested title:
+              p.small.fst-italic.mb-2.fw-medium = suggested_title
+              - if patent_app_id.present?
+                = button_to "Use this title", 
+                          update_title_patent_application_path(patent_app_id), 
+                          method: :patch, 
+                          params: { title: suggested_title },
+                          class: "btn btn-sm btn-primary btn-use-suggestion",
+                          form: { data: { turbo: true } }
+                - Rails.logger.debug("[Message Partial] Showing title suggestion because title is empty")
+              - else
+                p.small.text-muted Cannot apply suggestion (missing application ID)
+          
+          / Only show problem suggestion if the problem field is empty and this message is not a system message
+          - if suggested_problem.present? && problem_is_empty && !is_acceptance_message
             .suggested-problem.mb-2
               p.small.text-muted.mb-1 Suggested problem statement:
               p.small.fst-italic.mb-2 = suggested_problem
@@ -170,14 +232,15 @@
                 = button_to "Use this problem statement", 
                           update_problem_patent_application_path(patent_app_id), 
                           method: :patch, 
-                          params: { problem: suggested_problem },
+                          params: { problem: suggested_problem, ai_title: suggested_title },
                           class: "btn btn-sm btn-outline-primary btn-use-suggestion",
                           form: { data: { turbo: true } }
                 - Rails.logger.debug("[Message Partial] Showing problem suggestion because problem is empty") if Rails.env.development?
               - else
                 p.small.text-muted Cannot apply suggestion (missing application ID)
           
-          - if suggested_solution.present? && solution_is_empty
+          / Only show solution suggestion if the solution field is empty and this is not an acceptance message
+          - if suggested_solution.present? && solution_is_empty && !is_acceptance_message
             .suggested-solution.mt-3
               p.small.text-muted.mb-1 Suggested solution outline:
               p.small.fst-italic.mb-2 = suggested_solution

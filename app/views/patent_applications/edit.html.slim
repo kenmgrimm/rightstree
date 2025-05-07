@@ -39,7 +39,12 @@
             - seen_contents = {}
             - unique_messages = @patent_application.chat_history.reject do |msg|
               - role = msg[:role] || msg['role']
-              - next true if role == 'system' # Skip system messages
+              - content = msg[:content] || msg['content'] || ""
+              
+              / Only skip system messages that are not acceptance messages
+              - if role == 'system'
+                - is_acceptance = content.to_s.start_with?("Problem statement accepted") || content.to_s.start_with?("Title accepted")
+                - next true unless is_acceptance # Skip non-acceptance system messages
               
               / Get content based on the message format
               - if role == 'assistant'
@@ -47,6 +52,9 @@
                 - content_hash = content_hash.is_a?(Hash) ? content_hash : {}
                 - message_text = content_hash[:message] || content_hash['message'] || ""
                 - content_key = "assistant:#{message_text}"
+              - elsif role == 'system'
+                - message_text = msg[:content] || msg['content'] || ""
+                - content_key = "system:#{message_text}"
               - else
                 - message_text = msg[:message] || msg['message'] || msg[:content] || msg['content'] || ""
                 - content_key = "#{role}:#{message_text}"
