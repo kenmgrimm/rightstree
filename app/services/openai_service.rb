@@ -31,11 +31,18 @@ class OpenaiService
   private
 
   def fetch_api_key
-    key = Rails.application.credentials.OPENAI_API_TOKEN || ENV["OPENAI_API_TOKEN"]
+    # Try to get from credentials first (preferred method)
+    key = Rails.application.credentials.dig(:openai, :api_key)
+    # Fall back to direct credential or environment variable
+    key ||= Rails.application.credentials.OPENAI_API_TOKEN
+    key ||= ENV["OPENAI_API_TOKEN"]
+    
     unless key
       Rails.logger.error("[OpenaiService] OpenAI API key missing! Set credentials or ENV.")
       raise "OpenAI API key missing!"
     end
+    
+    Rails.logger.debug "[OpenaiService] Successfully loaded OpenAI API key"
     key
   end
 end

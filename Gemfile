@@ -80,3 +80,5 @@ group :development do
   gem "rubocop", "~> 1.75", require: false
   gem "rubocop-rails", "~> 2.31", require: false
 end
+
+gem "dockerfile-rails", ">= 1.7", group: :development

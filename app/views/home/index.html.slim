@@ -9,7 +9,7 @@
     .row.justify-content-center
       .col-12.col-md-10.col-lg-8.text-center
         .mb-4
-          = image_tag "/images/rightstree_logo_label_bottom.png", alt: "RightsTree", class: "img-fluid", style: "max-height: 220px;"
+          = image_tag asset_path("rightstree_logo_label_bottom.png"), alt: "RightsTree", class: "img-fluid", style: "max-height: 220px;"
           - logger.debug "[Logo Debug] Using rightstree_logo_label_bottom.png on homepage hero (size: 220px)"
         h2.display-6.mb-3.fst-italic style="color: var(--primary-color);" Where Ideas Take Root
         - logger.debug "[Style Debug] Made tagline 'Where Ideas Take Root' italic on homepage"
@@ -37,7 +37,7 @@
             | With RightsTree, you can easily create, manage, and publish your patent applications.
           
           .text-center.mb-4
-            = image_tag "/images/rightstree_logo_cropped.png", alt: "RightsTree Icon", height: 60, class: "mb-3"
+            = image_tag asset_path("rightstree_logo_cropped.png"), alt: "RightsTree Icon", height: 60, class: "mb-3"
             - logger.debug "[Logo Debug] Using rightstree_logo_cropped.png in welcome card"
           
           .d-grid.d-md-block.text-center
@@ -90,7 +90,7 @@
         .card-body.p-4.p-md-5
           .row.align-items-center
             .col-md-4.text-center.mb-4.mb-md-0
-              = image_tag "/images/rightstree_logo.png", alt: "RightsTree", class: "img-fluid", style: "max-height: 150px;"
+              = image_tag asset_path("rightstree_logo.png"), alt: "RightsTree", class: "img-fluid", style: "max-height: 150px;"
               - logger.debug "[Logo Debug] Using rightstree_logo.png in Why Use RightsTree section"
             
             .col-md-8
