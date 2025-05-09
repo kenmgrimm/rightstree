@@ -15,17 +15,23 @@ Rails.application.configure do
   # Turn on fragment caching in view templates.
   config.action_controller.perform_caching = true
 
-  # Cache assets for far-future expiry since they are all digest stamped.
-  config.public_file_server.headers = { "cache-control" => "public, max-age=#{1.year.to_i}" }
-
-  # Enable serving of images, stylesheets, and JavaScripts from an asset server.
-  # config.asset_host = "http://assets.example.com"
+  # Simple Propshaft configuration for production
+  # Focus on serving static assets correctly
 
   # Enable serving of static assets
   config.public_file_server.enabled = true
-  
-  # Enable asset compilation in production (not recommended for performance, but needed for our demo)
-  config.assets.compile = true
+
+  # Set log level to debug for more verbose logging
+  config.log_level = :debug
+
+  # Configure public file server with caching headers
+  config.public_file_server.headers = {
+    "Cache-Control" => "public, max-age=31536000",
+    "X-Content-Type-Options" => "nosniff"
+  }
+
+  # Disable X-Sendfile header for Fly.io
+  config.action_dispatch.x_sendfile_header = nil
 
   # Store uploaded files on the local file system (see config/storage.yml for options).
   config.active_storage.service = :local
